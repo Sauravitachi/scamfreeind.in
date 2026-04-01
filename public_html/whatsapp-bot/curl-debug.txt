@@ -1,0 +1,59 @@
+﻿curl.exe :   % Total    % Received % Xferd  Average Speed   Time    Time     
+Time  Current
+At line:1 char:1
++ curl.exe -v -H "Accept: application/json" -H "Content-Type: applicati ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (  % Total    % ...  Time  Current 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     
+0*   Trying 127.0.0.1:8000...
+* Connected to 127.0.0.1 (127.0.0.1) port 8000
+* using HTTP/1.x
+> POST /api/whatsapp/lead HTTP/1.1
+
+> Host: 127.0.0.1:8000
+
+> User-Agent: curl/8.13.0
+
+> Accept: application/json
+
+> Content-Type: application/json
+
+> Content-Length: 49
+
+> 
+
+} [49 bytes data]
+* upload completely sent off: 49 bytes
+< HTTP/1.1 422 Unprocessable Content
+
+< Host: 127.0.0.1:8000
+
+< Connection: close
+
+< X-Powered-By: PHP/8.2.12
+
+< Cache-Control: max-age=0, must-revalidate, no-store, nocache, private
+
+< Date: Wed, 18 Mar 2026 09:21:00 GMT
+
+< Content-Type: application/json
+
+< Pragma: no-cache
+
+< Expires: Tue, 19 Nov 1981 00:00:00 GMT
+
+< Access-Control-Allow-Origin: *
+
+< 
+
+{ [94 bytes data]
+
+100   143    0    94  100    49    187     97 --:--:-- --:--:-- --:--:--   285
+100   143    0    94  100    49    177     92 --:--:-- --:--:-- --:--:--   269
+* shutting down connection #0
+{"message":"The phone field is required.","errors":{"phone":["The phone field is required."]}}

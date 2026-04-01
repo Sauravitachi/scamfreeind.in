@@ -1,0 +1,245 @@
+{
+  "info": {
+    "_postman_id": "whatsapp-lead-capture",
+    "name": "WhatsApp Lead Capture System",
+    "description": "Test collection for WhatsApp Lead Capture API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Lead",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"919876543210@c.us\",\n  \"message\": \"I want to register a scam complaint\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/lead",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "whatsapp",
+            "lead"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Lead - Without @c.us",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"919876543210\",\n  \"message\": \"I lost money to an online scam\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/lead",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "whatsapp",
+            "lead"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Lead - Long Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"918765432109\",\n  \"message\": \"I received a call from someone claiming to be from State Bank of India. They said there was suspicious activity on my account and asked me to verify my account details. They got my card number and OTP. I realized it was a scam after the transaction. Please help me register this complaint.\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/lead",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "whatsapp",
+            "lead"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Lead - Duplicate Phone",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"919876543210@c.us\",\n  \"message\": \"Another message from the same phone - checking duplicate detection\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/lead",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "whatsapp",
+            "lead"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Test Invalid - Missing Phone",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"This request should fail because phone is missing\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/lead",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "whatsapp",
+            "lead"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Test Invalid - Empty Phone",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"\",\n  \"message\": \"Phone is empty\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/lead",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "whatsapp",
+            "lead"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Test Invalid - Invalid Phone Format",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"abc@c.us\",\n  \"message\": \"Phone has invalid characters\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/lead",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "whatsapp",
+            "lead"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Test Invalid - Missing Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"919876543210\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/lead",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "whatsapp",
+            "lead"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ]
+}
