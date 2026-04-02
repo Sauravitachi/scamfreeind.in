@@ -7,18 +7,20 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Public route to serve status-files from storage
-Route::get('/storage/uploads/status-files/{filename}', function ($filename) {
-    $path = storage_path('app/public/uploads/status-files/' . $filename);
+// Public route to serve public files from storage
+Route::get('/storage/{folder}/{filename}', function ($folder, $filename) {
+    $path = storage_path('app/public/' . $folder . '/' . $filename);
+
     if (!file_exists($path)) {
         abort(404);
     }
+
     $mimeType = mime_content_type($path);
     return response()->file($path, [
         'Content-Type' => $mimeType,
         'Cache-Control' => 'public, max-age=86400',
     ]);
-});
+})->where('folder', '.*');
 
 Route::post('webhook/social-media', [SocialMediaWebhookController::class, 'handle']);
 

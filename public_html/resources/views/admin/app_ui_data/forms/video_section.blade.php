@@ -12,60 +12,62 @@
         <p class="text-muted small mt-1 mb-0">Manage video section content & appearance</p>
     </div>
 
-    <div class="card-body px-6 pb-6 pt-4">
+    <div class="card-body px-6 pb-6 pt-4">        
 
-        <!-- Background Image -->
-        <div class="mb-10">
-            <label class="fw-semibold fs-6 mb-4 d-block required">Background Image</label>
-
-            <div class="d-flex flex-wrap gap-5 align-items-center">
-                <!-- Preview -->
-                <div
-                    class="rounded-3 border shadow-sm"
-                    style="
-                        width: 160px;
-                        height: 120px;
-                        background-image: url('{{ $image }}');
-                        background-size: cover;
-                        background-position: center;
-                    ">
-                </div>
-
-                <!-- Upload -->
-                <div class="flex-grow-1" style="max-width: 420px;">
-                    <input
-                        type="file"
-                        name="bg_image"
-                        class="form-control form-control-solid"
-                        accept=".png,.jpg,.jpeg,.svg,.avif"
-                    />
-                    <div class="form-text">PNG, JPG, SVG, AVIF (recommended: 16:9 ratio)</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Title + Subtitle -->
+        <!-- Titles + Subtitles -->
         <div class="row g-6 mb-10">
             <div class="col-lg-6">
-                <label class="fw-semibold fs-6 mb-2">Section Title</label>
-                <input
-                    type="text"
-                    name="video_section_title"
-                    class="form-control form-control-lg form-control-solid"
-                    placeholder="Enter title"
-                    value="{{ $data->video_section_title ?? '' }}"
-                />
+                <label class="fw-semibold fs-6 mb-2">Section Titles</label>
+                <div id="title-wrapper">
+                    @php
+                        $titles = (array) ($data->video_section_title ?? []);
+                    @endphp
+                    @if(!empty($titles))
+                        @foreach($titles as $title)
+                            <div class="title-item mb-3 d-flex gap-2">
+                                <input type="text" name="video_section_title[]" 
+                                    class="form-control form-control-lg form-control-solid"
+                                    value="{{ $title }}" placeholder="Enter title">
+                                <button type="button" class="btn btn-danger remove-item">X</button>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="title-item mb-3 d-flex gap-2">
+                            <input type="text" name="video_section_title[]" 
+                                class="form-control form-control-lg form-control-solid"
+                                placeholder="Enter title">
+                            <button type="button" class="btn btn-danger remove-item">X</button>
+                        </div>
+                    @endif
+                </div>
+                <button type="button" id="add-title" class="btn btn-light-primary btn-sm mt-2 bg-primary text-white">+ Add Title</button>
             </div>
 
             <div class="col-lg-6">
-                <label class="fw-semibold fs-6 mb-2">Subtitle</label>
-                <input
-                    type="text"
-                    name="video_section_subtitle"
-                    class="form-control form-control-lg form-control-solid"
-                    placeholder="Enter subtitle"
-                    value="{{ $data->video_section_subtitle ?? '' }}"
-                />
+                <label class="fw-semibold fs-6 mb-2">Subtitles</label>
+                <div id="subtitle-wrapper">
+                    @php
+                        $subtitles = (array) ($data->video_section_subtitle ?? []);
+                    @endphp
+                    @if(!empty($subtitles))
+                        @foreach($subtitles as $subtitle)
+                            <div class="subtitle-item mb-3 d-flex gap-2">
+                                <input type="text" name="video_section_subtitle[]" 
+                                    class="form-control form-control-lg form-control-solid"
+                                    value="{{ $subtitle }}" placeholder="Enter subtitle">
+                                <button type="button" class="btn btn-danger remove-item">X</button>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="subtitle-item mb-3 d-flex gap-2">
+                            <input type="text" name="video_section_subtitle[]" 
+                                class="form-control form-control-lg form-control-solid"
+                                placeholder="Enter subtitle">
+                            <button type="button" class="btn btn-danger remove-item">X</button>
+                        </div>
+                    @endif
+                </div>
+                <button type="button" id="add-subtitle" class="btn btn-light-primary btn-sm mt-2 bg-primary text-white">+ Add Subtitle</button>
             </div>
         </div>
 
@@ -122,28 +124,36 @@
 
         </div>
 
-        <!-- Video Upload -->
-        <div class="mb-6">
-            <label class="fw-semibold fs-6 mb-3 d-block">Upload Video</label>
+        <!-- Video URLs -->
+        <div class="mb-6 mt-4">
+            <label class="fw-semibold fs-6 mb-2">Video URLs</label>
+            <div id="video-wrapper">
+                @php
+                    $videos = (array) ($data->video_section_video ?? []);
+                @endphp
 
-            <input
-                type="file"
-                name="video_section_video"
-                class="form-control form-control-solid"
-                accept="video/mp4,video/avi,video/mov,video/wmv"
-            />
-
-            <div class="form-text">
-                Allowed: MP4, MOV, AVI, WMV (Max: 20MB)
+                @if(!empty($videos))
+                    @foreach($videos as $video)
+                        <div class="video-item mb-3 d-flex gap-2">
+                            <input type="text" name="video_section_video[]" 
+                                class="form-control form-control-lg form-control-solid"
+                                value="{{ $video }}" placeholder="Enter video URL">
+                            <button type="button" class="btn btn-danger remove-item">X</button>
+                        </div>
+                    @endforeach
+                @else
+                    <div class="video-item mb-3 d-flex gap-2">
+                        <input type="text" name="video_section_video[]" 
+                            class="form-control form-control-lg form-control-solid"
+                            placeholder="Enter video URL">
+                        <button type="button" class="btn btn-danger remove-item">X</button>
+                    </div>
+                @endif
             </div>
 
-            @if(!empty($data->video_section_video_url))
-                <div class="mt-4">
-                    <video width="260" controls class="rounded shadow-sm">
-                        <source src="{{ $data->video_section_video_url }}" type="video/mp4">
-                    </video>
-                </div>
-            @endif
+            <button type="button" id="add-video" class="btn btn-light-primary btn-sm mt-2 bg-primary text-white">
+                + Add Video
+            </button>
         </div>
 
     </div>
@@ -205,5 +215,36 @@ function normalizeHex(value) {
 
 setupColorSync('titleColorPicker', 'titleColorHex', '#6c757d');
 setupColorSync('subtitleColorPicker', 'subtitleColorHex', '#6c757d');
+
+function createItemRow(name, placeholder) {
+    const div = document.createElement('div');
+    div.classList.add('mb-3', 'd-flex', 'gap-2');
+    div.innerHTML = `
+        <input type="text" name="${name}[]" 
+            class="form-control form-control-lg form-control-solid"
+            placeholder="${placeholder}">
+        <button type="button" class="btn btn-danger remove-item">X</button>
+    `;
+    return div;
+}
+
+document.getElementById('add-title')?.addEventListener('click', function () {
+    document.getElementById('title-wrapper').appendChild(createItemRow('video_section_title', 'Enter title'));
+});
+
+document.getElementById('add-subtitle')?.addEventListener('click', function () {
+    document.getElementById('subtitle-wrapper').appendChild(createItemRow('video_section_subtitle', 'Enter subtitle'));
+});
+
+document.getElementById('add-video')?.addEventListener('click', function () {
+    document.getElementById('video-wrapper').appendChild(createItemRow('video_section_video', 'Enter video URL'));
+});
+
+// Remove
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-item')) {
+        e.target.parentElement.remove();
+    }
+});
 </script>
 @endpush
