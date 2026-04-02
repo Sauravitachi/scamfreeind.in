@@ -15,6 +15,7 @@ Route::get('/user', function (Request $request) {
 Route::prefix('blogs')->group(function () {
     Route::get('/', [BlogController::class, 'index']);
     Route::get('/latest', [BlogController::class, 'latest']);
+    Route::get('/search', [BlogController::class, 'search']);
     Route::get('/{slug}', [BlogController::class, 'show']);
 });
 

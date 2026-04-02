@@ -14,27 +14,7 @@ class BlogController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Blog::with('author:id,name,username')
-            ->where('status', 'published')
-            ->orderBy('published_at', 'DESC');
-        if ($request->has('featured')) {
-            $query->where('is_featured', true);
-        }
-
-        if ($request->has('search')) {
-            $search = $request->query('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'LIKE', "%{$search}%")
-                  ->orWhere('summary', 'LIKE', "%{$search}%");
-            });
-        }
-
-        $blogs = $query->paginate($request->query('limit', 10));
-
-        return response()->json([
-            'success' => true,
-            'data' => $blogs
-        ]);
+        return $this->search($request);
     }
 
     /**
@@ -70,6 +50,39 @@ class BlogController extends Controller
             ->orderBy('published_at', 'DESC')
             ->limit($request->query('limit', 3))
             ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $blogs
+        ]);
+    }
+
+    /**
+     * Search blog posts.
+     */
+    public function search(Request $request, $searchTerm = null): JsonResponse
+    {
+        $search = $searchTerm ?: $request->input('params.search', $request->query('search'));
+        
+        $featured = $request->input('params.featured', $request->query('featured'));
+        $limit = $request->input('params.limit', $request->query('limit', 10));
+
+        $query = Blog::with('author:id,name,username')
+            ->where('status', 'published')
+            ->orderBy('published_at', 'DESC');
+
+        if ($featured) {
+            $query->where('is_featured', true);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'LIKE', "%{$search}%")
+                  ->orWhere('summary', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $blogs = $query->paginate($limit)->withQueryString();
 
         return response()->json([
             'success' => true,
