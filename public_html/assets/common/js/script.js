@@ -99,7 +99,9 @@ function ajaxForm(formSelector, options = {}) {
         .on("submit", function (e) {
             e.preventDefault();
             const form = $(this);
-            if ($(formSelector).valid()) {
+            const isValid = typeof form.valid === 'function' ? form.valid() : true;
+
+            if (isValid) {
                 let isSuccess = false;
                 let redirectTo = null;
 
@@ -339,15 +341,4 @@ $(document).ready(function () {
         },
     });
 
-    // applying trim on values before jquery validation
-    if (typeof jQuery !== 'undefined' && jQuery.validator && jQuery.validator.methods) {
-        jQuery.each(jQuery.validator.methods, function (key, value) {
-            jQuery.validator.methods[key] = function () {
-                if (arguments.length > 0) {
-                    arguments[0] = jQuery.trim(arguments[0]);
-                }
-                return value.apply(this, arguments);
-            };
-        });
-    }
 });

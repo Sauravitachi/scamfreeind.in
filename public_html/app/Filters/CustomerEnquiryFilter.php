@@ -112,9 +112,11 @@ class CustomerEnquiryFilter
 
         if (! empty($keyData) && ! (count($keyData) == 1 && $keyData[0] === null)) {
             $query->where(function (Builder $q) use ($keyData, $field): void {
-                in_array('-1', $keyData)
-                    ? $q->whereNull($field)
-                    : $q->whereIn($field, $keyData);
+                if (in_array('-1', $keyData)) {
+                    $q->whereNull($field)->orWhereIn($field, $keyData);
+                } else {
+                    $q->whereIn($field, $keyData);
+                }
             });
         }
     }
@@ -130,9 +132,11 @@ class CustomerEnquiryFilter
         if (! empty($keyData) && ! (count($keyData) == 1 && $keyData[0] === null)) {
             $query->whereHas('customer.scams', function (Builder $q) use ($keyData, $columnField): void {
                 $q->where('scams.is_duplicate', false)->where(function (Builder $q) use ($keyData, $columnField): void {
-                    in_array('-1', $keyData)
-                        ? $q->whereNull($columnField)
-                        : $q->whereIn($columnField, $keyData);
+                    if (in_array('-1', $keyData)) {
+                        $q->whereNull($columnField)->orWhereIn($columnField, $keyData);
+                    } else {
+                        $q->whereIn($columnField, $keyData);
+                    }
                 });
             });
         }

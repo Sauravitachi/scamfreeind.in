@@ -20,14 +20,22 @@ class UnassignScamsWithStatus
         $this->scamsFrom = Carbon::parse('2025-05-28');
     }
 
-    public function handle(): void
+    public function handle(): int
     {
-        DB::transaction(function () {
+        return DB::transaction(function () {
+            $count = 0;
             foreach ([ScamStatusType::SALES, ScamStatusType::DRAFTING] as $statusType) {
-                $this->unassignScams($statusType);           
-                $this->unassignIfNoStatusChange($statusType);
+                $count += $this->unassignScams($statusType);           
+                $count += $this->unassignIfNoStatusChange($statusType);
             }
-            $this->holdStatus();
+            $count += $this->unassignSalesIfNoUpdateFor18Hours();
+            $count += $this->holdStatus();
+
+            if ($count > 0) {
+                Log::info("[ScamUnassign] Handled $count scams in total during this run.");
+            }
+
+            return $count;
         });
     }
 
@@ -35,12 +43,12 @@ class UnassignScamsWithStatus
      | STATUS-BASED UNASSIGN
      ============================== */
 
-    private function unassignScams(ScamStatusType $statusType): void
+    private function unassignScams(ScamStatusType $statusType): int
     {
         $unassignableStatuses = $this->getUnassignableStatuses($statusType);
 
         if ($unassignableStatuses->isEmpty()) {
-            return;
+            return 0;
         }
 
         $scams = $this->getScamsWithStatuses(
@@ -48,9 +56,13 @@ class UnassignScamsWithStatus
             $unassignableStatuses->keys()
         );
 
+        $count = 0;
         foreach ($scams as $scam) {
-            $this->tryUnassign($scam, $statusType, $unassignableStatuses);
+            if ($this->tryUnassign($scam, $statusType, $unassignableStatuses)) {
+                $count++;
+            }
         }
+        return $count;
     }
 
     private function getUnassignableStatuses(ScamStatusType $statusType)
@@ -77,7 +89,7 @@ class UnassignScamsWithStatus
         Scam $scam,
         ScamStatusType $statusType,
         $unassignableStatuses
-    ): void {
+    ): bool {
         $prefix   = $statusType->value;
         $statusId = $scam->{"{$prefix}_status_id"};
         $status   = $unassignableStatuses->get($statusId);
@@ -88,7 +100,7 @@ class UnassignScamsWithStatus
             ! $lastUpdated ||
             $lastUpdated > now()->subDays($status->unassign_scam_in_days)
         ) {
-            return;
+            return false;
         }
 
         $this->forceUnassign(
@@ -97,31 +109,38 @@ class UnassignScamsWithStatus
             "Removed {$prefix} assignee (Due to status update days limit)",
             $statusId
         );
+
+        return true;
     }
 
     /* ==============================
      | NO STATUS SELECTED (1 DAY RULE)
      ============================== */
 
-    private function unassignIfNoStatusChange(ScamStatusType $statusType): void
+    private function unassignIfNoStatusChange(ScamStatusType $statusType): int
     {
         $prefix = $statusType->value;
+        $threshold = ($statusType === ScamStatusType::SALES) ? now()->subHours(18) : now()->subDay();
 
         $scams = Scam::where('is_duplicate', false)
             ->whereNotNull("{$prefix}_assignee_id")
             ->whereNull("{$prefix}_status_id")
             ->whereNotNull("{$prefix}_assigned_at")
-            ->where("{$prefix}_assigned_at", '<=', now()->subDay())
+            ->where("{$prefix}_assigned_at", '<=', $threshold)
             ->where('created_at', '>=', $this->scamsFrom)
             ->get();
 
+        $count = 0;
         foreach ($scams as $scam) {
+            $timeLabel = ($statusType === ScamStatusType::SALES) ? '18 hours' : '1 day';
             $this->forceUnassign(
                 $scam,
                 $statusType,
-                "Removed {$prefix} assignee (No status selected within 1 day)"
+                "Removed {$prefix} assignee (No status selected within {$timeLabel})"
             );
+            $count++;
         }
+        return $count;
     }
 
     /* ==============================
@@ -135,26 +154,48 @@ class UnassignScamsWithStatus
         ?int $statusId = null
     ): void {
         $prefix = $statusType->value;
-        $originalAssigneeId = $scam->{"{$prefix}_assignee_id"};
 
+        // Clear both assignee and status to return to pool
         $scam->update([
             "{$prefix}_assignee_id" => null,
-        ]);
-
-        $scam->statusUnassignRecords()->create([
-            'assignee_id' => $originalAssigneeId,
-            'status_id'   => $statusId,
-            'status_type' => $statusType,
+            "{$prefix}_status_id"   => null,
         ]);
 
         $eventName = strtoupper("{$prefix}_assign");
         $event = constant("App\\Enums\\ScamActivityEvent::{$eventName}");
 
         $scam->logActivity($description, $event);
+        Log::info("[ScamUnassign] Scam #{$scam->id}: $description");
+    }
+
+    private function unassignSalesIfNoUpdateFor18Hours(): int
+    {
+        $prefix = ScamStatusType::SALES->value;
+        $threshold = now()->subHours(18);
+
+        // Find scams with a status that haven't been updated for 18 hours
+        $scams = Scam::where('is_duplicate', false)
+            ->whereNotNull("{$prefix}_assignee_id")
+            ->whereNotNull("{$prefix}_status_id")
+            ->where("{$prefix}_status_updated_at", '<=', $threshold)
+            ->where('created_at', '>=', $this->scamsFrom)
+            ->get();
+
+        $count = 0;
+        foreach ($scams as $scam) {
+            $this->forceUnassign(
+                $scam,
+                ScamStatusType::SALES,
+                "Removed sales assignee (No status update for 18 hours)",
+                $scam->sales_status_id
+            );
+            $count++;
+        }
+        return $count;
     }
 
 
-    private function holdStatus(): void
+    private function holdStatus(): int
     {
         $statusType = ScamStatusType::SALES;
         $prefix = $statusType->value;
@@ -164,7 +205,7 @@ class UnassignScamsWithStatus
             ->first();
 
         if (!$holdStatus) {
-            return;
+            return 0;
         }
 
         // Send 2-day reminder before unassigning
@@ -178,6 +219,7 @@ class UnassignScamsWithStatus
             ->where('created_at', '>=', $this->scamsFrom)
             ->get();
 
+        $count = 0;
         foreach ($scams as $scam) {
             $this->forceUnassign(
                 $scam,
@@ -185,7 +227,9 @@ class UnassignScamsWithStatus
                 "Removed {$prefix} assignee (Hold for more than 1 month)",
                 $holdStatus->id
             );
+            $count++;
         }
+        return $count;
     }
 
     private function notifyHoldReminder(ScamStatus $holdStatus, string $prefix): void

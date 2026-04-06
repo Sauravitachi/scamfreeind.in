@@ -62,7 +62,10 @@ class ScamFilter
                 $query->where('is_duplicate', true);
             } elseif ($key == 3 && $user->can(Permission::STATUS_UNASSIGNED_SCAM_LIST)) {
                 $query->where(function ($q) {
-                    $q->whereHas('latestSalesStatusUnassignRecord')
+                    $q->whereNull('sales_assignee_id')
+                        ->orWhereNull('drafting_assignee_id')
+                        ->orWhereNull('service_assignee_id')
+                        ->orWhereHas('latestSalesStatusUnassignRecord')
                         ->orWhereHas('latestDraftingStatusUnassignRecord')
                         ->orWhereHas('latestServiceStatusUnassignRecord');
                 });
@@ -70,11 +73,11 @@ class ScamFilter
             }
         }
 
-        if (! $showStatusUnassigneRecords) {
-            $query->whereDoesntHave('latestSalesStatusUnassignRecord')
-                ->whereDoesntHave('latestDraftingStatusUnassignRecord')
-                ->whereDoesntHave('latestServiceStatusUnassignRecord');
-        }
+        // if (! $showStatusUnassigneRecords) {
+        //     $query->whereDoesntHave('latestSalesStatusUnassignRecord')
+        //         ->whereDoesntHave('latestDraftingStatusUnassignRecord')
+        //         ->whereDoesntHave('latestServiceStatusUnassignRecord');
+        // }
 
         /**
          * Customer Name Filter
@@ -194,8 +197,35 @@ class ScamFilter
         /**
          * Created at range filter
          */
+        $isFilteringUnassigned = $showStatusUnassigneRecords ||
+            in_array('-1', (array) $request->input('sales_assignee_id')) ||
+            in_array('-1', (array) $request->input('drafting_assignee_id')) ||
+            in_array('-1', (array) $request->input('sub_admin_id'));
+
+        $isSubAdminRoute = $request->routeIs('admin.sub_admin');
+
         if ($request->filled('created_at')) {
-            self::dateRangeFilter(query: $query, request: $request, field: 'created_at');
+            if ($isFilteringUnassigned || $isSubAdminRoute) {
+                $key = $request->input('created_at');
+                $range = carbon_date_range($key, 'to', expandDates: true);
+                $reverse = $request->boolean('exclude_created_at');
+
+                $query->where(function (Builder $q) use ($range, $reverse, $isFilteringUnassigned, $isSubAdminRoute) {
+                    $q->{$reverse ? 'whereNotBetween' : 'whereBetween'}('scams.created_at', [$range->start, $range->end]);
+
+                    if ($isFilteringUnassigned) {
+                        $q->{$reverse ? 'whereDoesntHave' : 'orWhereHas'}('statusUnassignRecords', function (Builder $q) use ($range) {
+                            $q->whereBetween('created_at', [$range->start, $range->end]);
+                        });
+                    }
+
+                    if ($isSubAdminRoute) {
+                        $q->{$reverse ? 'whereNotBetween' : 'whereBetween'}('scams.sub_admin_assigned_at', [$range->start, $range->end]);
+                    }
+                });
+            } else {
+                self::dateRangeFilter(query: $query, request: $request, field: 'created_at');
+            }
         }
 
         if ($request->filled('sales_status_unassigned_assignee_id')) {
@@ -236,6 +266,13 @@ class ScamFilter
          */
         if ($request->filled('service_assigned_at')) {
             self::dateRangeFilter(query: $query, request: $request, field: 'service_assigned_at', fieldId: 'service_assignee_id');
+        }
+
+        /**
+         * Sub Admin Assigned at range filter
+         */
+        if ($request->filled('sub_admin_assigned_at')) {
+            self::dateRangeFilter(query: $query, request: $request, field: 'sub_admin_assigned_at', fieldId: 'sub_admin_id');
         }
 
         /**
@@ -324,9 +361,15 @@ class ScamFilter
 
         if (! empty($keyData) && ! (count($keyData) == 1 && $keyData[0] === null)) {
             $query->where(function (Builder $q) use ($keyData, $reverse, $field): void {
-                in_array('-1', $keyData)
-                    ? $q->{$reverse ? 'whereNotNull' : 'whereNull'}($field)
-                    : $q->{$reverse ? 'whereNotIn' : 'whereIn'}($field, $keyData);
+                if (in_array('-1', $keyData)) {
+                    if ($reverse) {
+                        $q->whereNotNull($field)->whereNotIn($field, $keyData);
+                    } else {
+                        $q->whereNull($field)->orWhereIn($field, $keyData);
+                    }
+                } else {
+                    $q->{$reverse ? 'whereNotIn' : 'whereIn'}($field, $keyData);
+                }
             });
         }
 
@@ -352,32 +395,45 @@ class ScamFilter
                 if ($history) {
 
                     if ($hasNullable) {
-                        $q->{$reverse ? 'whereNotNull' : 'whereNull'}($field);
+                        if ($reverse) {
+                            $q->whereNotNull($field)->whereNotIn($field, $keyData);
+                        } else {
+                            $q->whereNull($field)->orWhereIn($field, $keyData);
+                        }
+                    } else {
+                        $q->{$reverse ? 'whereNotIn' : 'whereIn'}($field, $keyData);
                     }
 
-                    $q->{$reverse ? 'orWhereNotIn' : 'orWhereIn'}($field, $keyData)
-                        ->{$reverse ? 'orWhereDoesntHave' : 'orWhereHas'}('assigneeRecords', function (Builder $q) use ($keyData, $reverse, $assigneeType, $hasNullable): void {
+                    $q->{$reverse ? 'orWhereDoesntHave' : 'orWhereHas'}('assigneeRecords', function (Builder $q) use ($keyData, $reverse, $assigneeType, $hasNullable): void {
 
-                            $q->where('assignee_type', $assigneeType->value)
-                                ->where(function ($q) use ($hasNullable, $reverse, $keyData) {
+                        $q->where('assignee_type', $assigneeType->value)
+                            ->where(function ($q) use ($hasNullable, $reverse, $keyData) {
 
-                                    if ($hasNullable) {
-                                        $q->{$reverse ? 'whereNotNull' : 'whereNull'}('assignee_id');
+                                if ($hasNullable) {
+                                    if ($reverse) {
+                                        $q->whereNotNull('assignee_id')->whereNotIn('assignee_id', $keyData);
+                                    } else {
+                                        $q->whereNull('assignee_id')->orWhereIn('assignee_id', $keyData);
                                     }
+                                } else {
+                                    $q->{$reverse ? 'whereNotIn' : 'whereIn'}('assignee_id', $keyData);
+                                }
 
-                                    $q->orWhereIn('assignee_id', $keyData);
+                            });
 
-                                });
-
-                        });
+                    });
 
                 } else {
 
                     if ($hasNullable) {
-                        $q->{$reverse ? 'whereNotNull' : 'whereNull'}($field);
+                        if ($reverse) {
+                            $q->whereNotNull($field)->whereNotIn($field, $keyData);
+                        } else {
+                            $q->whereNull($field)->orWhereIn($field, $keyData);
+                        }
+                    } else {
+                        $q->{$reverse ? 'whereNotIn' : 'whereIn'}($field, $keyData);
                     }
-
-                    $q->{$reverse ? 'orWhereNotIn' : 'orWhereIn'}($field, $keyData);
 
                 }
             });
@@ -402,11 +458,22 @@ class ScamFilter
                 $relation = $history ? 'statusUnassignRecords' : 'latest'.ucfirst($assigneeType->value).'StatusUnassignRecord';
 
                 $q->whereHas($relation, function (Builder $q) use ($keyData, $assigneeType, $reverse) {
-                    $q->when(
-                        value: $reverse,
-                        callback: fn (Builder $q) => $q->whereNotIn('assignee_id', $keyData),
-                        default: fn (Builder $q) => $q->whereIn('assignee_id', $keyData)
-                    )->where('status_type', $assigneeType);
+                    $hasNullable = in_array('-1', $keyData);
+                    $q->where(function (Builder $q) use ($hasNullable, $reverse, $keyData) {
+                        if ($hasNullable) {
+                            if ($reverse) {
+                                $q->whereNotNull('assignee_id')->whereNotIn('assignee_id', $keyData);
+                            } else {
+                                $q->whereNull('assignee_id')->orWhereIn('assignee_id', $keyData);
+                            }
+                        } else {
+                            if ($reverse) {
+                                $q->whereNotIn('assignee_id', $keyData);
+                            } else {
+                                $q->whereIn('assignee_id', $keyData);
+                            }
+                        }
+                    })->where('status_type', $assigneeType);
                 });
 
             });
@@ -428,11 +495,22 @@ class ScamFilter
             $relation = 'latest'.ucfirst($statusType->value).'StatusUnassignRecord';
 
             $query->whereHas($relation, function (Builder $q) use ($keyData, $statusType, $reverse) {
-                $q->when(
-                    value: $reverse,
-                    callback: fn (Builder $q) => $q->whereNotIn('status_id', $keyData),
-                    default: fn (Builder $q) => $q->whereIn('status_id', $keyData)
-                )->where('status_type', $statusType);
+                $hasNullable = in_array('-1', $keyData);
+                $q->where(function (Builder $q) use ($hasNullable, $reverse, $keyData) {
+                    if ($hasNullable) {
+                        if ($reverse) {
+                            $q->whereNotNull('status_id')->whereNotIn('status_id', $keyData);
+                        } else {
+                            $q->whereNull('status_id')->orWhereIn('status_id', $keyData);
+                        }
+                    } else {
+                        if ($reverse) {
+                            $q->whereNotIn('status_id', $keyData);
+                        } else {
+                            $q->whereIn('status_id', $keyData);
+                        }
+                    }
+                })->where('status_type', $statusType);
             });
         }
     }
@@ -470,9 +548,14 @@ class ScamFilter
         if (! empty($keyData) && ! (count($keyData) == 1 && $keyData[0] === null)) {
             $query->where(function (Builder $q) use ($keyData, $reverse, $hasNullable): void {
                 if ($hasNullable) {
-                    $q->{$reverse ? 'whereNotNull' : 'whereNull'}('sub_admin_id');
+                    if ($reverse) {
+                        $q->whereNotNull('sub_admin_id')->whereNotIn('sub_admin_id', $keyData);
+                    } else {
+                        $q->whereNull('sub_admin_id')->orWhereIn('sub_admin_id', $keyData);
+                    }
+                } else {
+                    $q->{$reverse ? 'whereNotIn' : 'whereIn'}('sub_admin_id', $keyData);
                 }
-                $q->{$reverse ? 'orWhereNotIn' : 'orWhereIn'}('sub_admin_id', $keyData);
             });
         }
     }

@@ -96,6 +96,7 @@ class AdminSidebar extends Sidebar
         if (
             $this->user->canAny([
                 Permission::REPORT_USER_SCAM_STATUS,
+                Permission::REPORT_SCAM_STATUS_TRANSITION,
             ])
         ) {
 
@@ -103,6 +104,9 @@ class AdminSidebar extends Sidebar
 
             if ($this->user->hasPermissionTo(Permission::REPORT_USER_SCAM_STATUS)) {
                 $this->addSubmenu(title: 'User Case Report', url: route('admin.reports.user-case-report'));
+            }
+             if ($this->user->hasPermissionTo(Permission::REPORT_SCAM_STATUS_TRANSITION)) {
+                $this->addSubmenu(title: 'Scam Status Transition Report', url: route('admin.reports.scam-status-transition-report'));
             }
         }
 

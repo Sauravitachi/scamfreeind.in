@@ -5,14 +5,16 @@
     @if($userType === 'admin')
         @if ($assigneeType === 'sales')
             <div class="col-12">
-                @php($options = $salesUsers->pluck('name', 'id')->toArray())
+                @php($options = $salesUsers->pluck('name', 'id'))
+                @php($options = $options->prepend('Unassigned 🔴', -1)->toArray())
                 <x-admin.select name='sales_assignee_id' label='Sales Assignee' class="filter-select2" :options="$options" multiple />
                 <x-admin.checkbox name='exclude_sales_assignee_id' label='Exclude' />
             </div>  
         @endif
         @if ($assigneeType === 'drafting')
             <div class="col-12">
-                @php($options = $draftingUsers->pluck('name', 'id')->toArray())
+                @php($options = $draftingUsers->pluck('name', 'id'))
+                @php($options = $options->prepend('Unassigned 🔴', -1)->toArray())
                 <x-admin.select name='drafting_assignee_id' label='Drafting Assignee' class="filter-select2" :options="$options" multiple />
                 <x-admin.checkbox name='exclude_drafting_assignee_id' label='Exclude' />
             </div>

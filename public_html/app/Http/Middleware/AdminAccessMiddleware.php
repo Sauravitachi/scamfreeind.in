@@ -51,7 +51,12 @@ class AdminAccessMiddleware
      */
     protected function pingUser($user): void
     {
-        Cache::remember("user-ping:{$user->id}", 10, fn () => $user->update(['last_pinged_at' => now()]));
+        try {
+            Cache::remember("user-ping:{$user->id}", 10, fn () => $user->update(['last_pinged_at' => now()]));
+        } catch (\Exception $e) {
+            // Log the error but don't crash the request
+            report($e);
+        }
     }
 
     /**

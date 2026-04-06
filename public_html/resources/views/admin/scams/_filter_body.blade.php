@@ -103,6 +103,10 @@
                             <x-admin.select name='sub_admin_id' label='Sub Admin' class="filter-select2" :options="$options" :selected="request()->input('filter_sub_admin_id')" multiple />
                             <x-admin.checkbox name='exclude_sub_admin_id' label='Exclude' />
                         </div>
+                        <div class="col-lg-6">
+                            <x-admin.input class="date_range_picker" name='sub_admin_assigned_at' label='Sub Admin Assigned At' :value="request()->input('sub_admin_assigned_at')" placeholder='Select Range' />
+                            <x-admin.checkbox name='exclude_sub_admin_assigned_at' label='Exclude' />
+                        </div>
                     @endcan
                 </div>
             </div>

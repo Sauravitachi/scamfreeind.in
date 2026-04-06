@@ -142,9 +142,11 @@ class ScamService extends Service
         }
 
         // sub-admin permission check
-        if ($request->routeIs('admin.sub_admin')) {
+         if ($request->routeIs('admin.sub_admin')) {
             if ($user->can(Permission::SUB_ADMIN_MANAGEMENT->value)) {
-                $query->where('sub_admin_id', $user->id);
+                $query->where(function (Builder $q) use ($user) {
+                    $q->where('sub_admin_id', $user->id)->orWhereNull('sub_admin_id');
+                });
             }
         }
 
@@ -479,12 +481,10 @@ class ScamService extends Service
 
         });
     }
-
-    // Modal Event Handlers
-
     public function handleScamStatusUpdateEvent(Scam $scam, bool $save = false): void
     {
 
+        
         if ($scam->isDirty('sales_status_id') && $scam->sales_status_id) {
             $scam->sales_status_updated_at = now();
         }
@@ -498,20 +498,70 @@ class ScamService extends Service
         }
     }
 
-    public function handleScamStatusUpdatedEvent(Scam $scam, bool $save = false): void
+     public function handleScamStatusUpdatedEvent(Scam $scam, bool $save = false): void
     {
         $authId = Auth::id();
+        if ($scam->wasChanged(['sales_status_id', 'remark', 'scam_amount'])) {
+                    if ($scam->sales_status_id == 7) {
+                        $scamAmount = $scam->scam_amount;
+                        $remark = strtolower($scam->remark ?? '');
+                        
+                        $remarkMatches = Str::contains($remark, [
+                            'less than 10000', 'less than 10k',
+                            'less then 10000', 'less then 10k',
+                            'less the 10000', 'less the 10k',
+                            'amount 10000', 'amount 10k',
+                            'amount 10 thousand', 'less than 10 thousand',
+                            'less then 10 thousand', 'less the 10 thousand',
+                            'under 10k', 'below 10k', 'under 10000', 'below 10000',
+                            ' 1k', ' 2k', ' 3k', ' 4k', ' 5k', ' 6k', ' 7k', ' 8k', ' 9k',
+                            'amount 1k', 'amount 2k', 'amount 3k', 'amount 4k', 'amount 5k', 'amount 6k', 'amount 7k', 'amount 8k', 'amount 9k'
+                        ]) || preg_match('/\b[1-9]k\b/i', $remark);
 
-        if ($scam->isDirty('sales_status_id')) {
+                        // Also check for plain numbers less than 10000 in the remark.
+                        if (!$remarkMatches && preg_match_all('/\b\d{1,3}(?:,?\d{3})*\b/', $remark, $numberMatches)) {
+                            foreach ($numberMatches[0] as $numStr) {
+                                $num = (float) str_replace(',', '', $numStr);
+                                if ($num > 0 && $num < 10000) {
+                                    $remarkMatches = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        $isSmall = (!is_null($scamAmount) && (float)$scamAmount > 0 && (float)$scamAmount < 10000) || $remarkMatches;
+
+                        if ($isSmall) {
+                            if ($scam->sales_assignee_id != 27) {
+                                $scam->sales_assignee_id = 27;
+                                $scam->sales_assigned_at = now();
+                                $scam->logActivity(
+                                    "Automatically assigned to Sales User ID 27 due to 'Not Interested' status with amount < 10,000 or matching remark",
+                                    ScamActivityEvent::SALES_ASSIGN
+                                );
+
+                                Log::info('Automated assignment triggered for Not Interested status', [
+                                    'scam_id' => $scam->id,
+                                    'scam_amount' => $scam->scam_amount,
+                                    'remark' => $scam->remark,
+                                ]);
+                            }
+                        }
+                    }
+                }
+        if ($scam->wasChanged('sales_status_id')) {
 
             $scam->sales_status_record_id = ScamStatusRecord::logRecord(scam: $scam, type: ScamStatusType::SALES, causer: $authId)?->id;
 
             UserScamStatusFreeze::checkAndTryFreezeRelease(scam: $scam, statusId: $scam->getOriginal('sales_status_id'), scamStatusType: ScamStatusType::SALES);
 
-            $this->unassignCaseOnStatusChange($scam, ScamStatusType::SALES);
+            // Only skip unassignment if we JUST automatically assigned it to User 20 in this event
+            if (!($scam->wasChanged('sales_assignee_id') && $scam->sales_assignee_id == 20)) {
+                $this->unassignCaseOnStatusChange($scam, ScamStatusType::SALES);
+            }
         }
 
-        if ($scam->isDirty('drafting_status_id')) {
+        if ($scam->wasChanged('drafting_status_id')) {
 
             $scam->drafting_status_record_id = ScamStatusRecord::logRecord(scam: $scam, type: ScamStatusType::DRAFTING, causer: $authId)?->id;
 
@@ -532,6 +582,7 @@ class ScamService extends Service
             $scam->saveQuietly();
         }
     }
+
 
     public function handleScamAssigneeUpdateEvent(Scam $scam, bool $save = false): void
     {
@@ -568,7 +619,7 @@ class ScamService extends Service
     {
         $authId = Auth::id();
 
-        if ($scam->isDirty('sales_assignee_id')) {
+        if ($scam->wasChanged('sales_assignee_id')) {
             if ($scam->sales_assignee_id) {
                 // SendAssignMessageToCustomer::dispatch($scam->id, ScamAssigneeType::SALES->value);
 
@@ -576,7 +627,7 @@ class ScamService extends Service
             }
         }
 
-        if ($scam->isDirty('drafting_assignee_id')) {
+        if ($scam->wasChanged('drafting_assignee_id')) {
             if ($scam->drafting_assignee_id) {
                 // SendAssignMessageToCustomer::dispatch($scam->id, ScamAssigneeType::DRAFTING->value);
 
@@ -584,25 +635,25 @@ class ScamService extends Service
             }
         }
 
-        if ($scam->isDirty('service_assignee_id')) {
+        if ($scam->wasChanged('service_assignee_id')) {
             if ($scam->service_assignee_id) {
                 $scam->latest_service_status_unassign_record_id = null;
             }
         }
 
-        if ($scam->isDirty('sales_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamStatusType::SALES)) {
+        if ($scam->wasChanged('sales_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamStatusType::SALES)) {
             ScamAssigneeRecord::logRecord(scam: $scam, type: ScamAssigneeType::SALES, causer: $authId, unassignStatus: $unassignStatus);
         }
 
-        if ($scam->isDirty('drafting_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamStatusType::DRAFTING)) {
+        if ($scam->wasChanged('drafting_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamStatusType::DRAFTING)) {
             ScamAssigneeRecord::logRecord(scam: $scam, type: ScamAssigneeType::DRAFTING, causer: $authId, unassignStatus: $unassignStatus);
         }
 
-        if ($scam->isDirty('service_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamAssigneeType::SERVICE)) {
+        if ($scam->wasChanged('service_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamAssigneeType::SERVICE)) {
             ScamAssigneeRecord::logRecord(scam: $scam, type: ScamAssigneeType::SERVICE, causer: $authId, unassignStatus: $unassignStatus);
         }
 
-        if ($scam->isDirty('sub_admin_id') || ($unassignStatus && $unassignStatus->type === ScamAssigneeType::SUB_ADMIN)) {
+        if ($scam->wasChanged('sub_admin_id') || ($unassignStatus && $unassignStatus->type === ScamAssigneeType::SUB_ADMIN)) {
             ScamAssigneeRecord::logRecord(scam: $scam, type: ScamAssigneeType::SUB_ADMIN, causer: $authId, unassignStatus: $unassignStatus);
         }
 

@@ -18,11 +18,11 @@
 
     <div class="row">
         <div class="col-12">
-            <x-admin.input name='name' label='Role Name' placeholder='Enter role name' :value="$role?->name" required />
+            <x-admin.input name='name' id="role-name" label='Role Name' placeholder='Enter role name' :value="$role?->name" required />
         </div>
         <div class="rol-12 my-3">
             <input type="hidden" name="is_admin" value="0">
-            <x-admin.checkbox name='is_admin' label='Is Admin?' value="1" :checked="$role?->is_admin" />
+            <x-admin.checkbox name='is_admin' id="role-is-admin" label='Is Admin?' value="1" :checked="$role?->is_admin" />
         </div>
         <div class="col-12">
             <h4 class="form-label required">
@@ -41,7 +41,7 @@
 
         @foreach ($permissions as $permission)
             <div class="col-lg-3 col-md-4 col-6 mt-2">
-                <x-admin.checkbox class="permission" name='permissions[]{{ $permission->name }}' :label="$permission->label"
+                <x-admin.checkbox class="permission" name="permissions[{{ $permission->name }}]" id="permission-{{ $permission->id }}" :label="$permission->label"
                     :value="$permission->name" :checked="isset($rolePermissions[$permission->id])" skip-errors />
             </div>
         @endforeach

@@ -57,7 +57,11 @@ class NotificationController extends \App\Foundation\Controller
 
         $this->activityLogService->visited('notifications list');
 
-        Auth::user()->unreadNotifications()->update(['read_at' => now()]);
+        try {
+            Auth::user()->unreadNotifications()->update(['read_at' => now()]);
+        } catch (\Exception $e) {
+            report($e);
+        }
 
         return view('admin.notifications.index');
     }
@@ -80,8 +84,12 @@ class NotificationController extends \App\Foundation\Controller
 
         $count = $user->unreadNotifications()->count();
 
-        // updating user's last ping time
-        $user->update(['last_pinged_at' => now()]);
+        try {
+            // updating user's last ping time
+            $user->update(['last_pinged_at' => now()]);
+        } catch (\Exception $e) {
+            report($e);
+        }
 
         return $this->responseService->json(success: true, data: compact('count', 'latestNotification'));
     }

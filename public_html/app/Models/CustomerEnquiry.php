@@ -73,9 +73,23 @@ class CustomerEnquiry extends Model
 
             if ($user_id !== null) {
                 if (is_array($user_id)) {
-                    $q->{$exclude ? 'whereNotIn' : 'whereIn'}('sales_assignee_id', $user_id);
+                    $q->where(function ($q) use ($user_id, $exclude) {
+                        if (in_array('-1', $user_id)) {
+                            if ($exclude) {
+                                $q->whereNotNull('sales_assignee_id')->whereNotIn('sales_assignee_id', $user_id);
+                            } else {
+                                $q->whereNull('sales_assignee_id')->orWhereIn('sales_assignee_id', $user_id);
+                            }
+                        } else {
+                            $q->{$exclude ? 'whereNotIn' : 'whereIn'}('sales_assignee_id', $user_id);
+                        }
+                    });
                 } else {
-                    $q->{$exclude ? 'whereNot' : 'where'}('sales_assignee_id', $user_id);
+                    if ($user_id == -1) {
+                        $q->{$exclude ? 'whereNotNull' : 'whereNull'}('sales_assignee_id');
+                    } else {
+                        $q->{$exclude ? 'whereNot' : 'where'}('sales_assignee_id', $user_id);
+                    }
                 }
                 $q->whereNull('drafting_assignee_id');
             } else {
@@ -83,6 +97,7 @@ class CustomerEnquiry extends Model
             }
         });
     }
+
 
     public function scopeWhereDraftingAssignee(Builder $query, null|array|int $user_id = null, bool $exclude = false, bool $bypassed = false): void
     {
@@ -102,9 +117,23 @@ class CustomerEnquiry extends Model
             }
             if ($user_id !== null) {
                 if (is_array($user_id)) {
-                    $q->{$exclude ? 'whereNotIn' : 'whereIn'}('drafting_assignee_id', $user_id);
+                    $q->where(function ($q) use ($user_id, $exclude) {
+                        if (in_array('-1', $user_id)) {
+                            if ($exclude) {
+                                $q->whereNotNull('drafting_assignee_id')->whereNotIn('drafting_assignee_id', $user_id);
+                            } else {
+                                $q->whereNull('drafting_assignee_id')->orWhereIn('drafting_assignee_id', $user_id);
+                            }
+                        } else {
+                            $q->{$exclude ? 'whereNotIn' : 'whereIn'}('drafting_assignee_id', $user_id);
+                        }
+                    });
                 } else {
-                    $q->{$exclude ? 'whereNot' : 'where'}('drafting_assignee_id', $user_id);
+                    if ($user_id == -1) {
+                        $q->{$exclude ? 'whereNotNull' : 'whereNull'}('drafting_assignee_id');
+                    } else {
+                        $q->{$exclude ? 'whereNot' : 'where'}('drafting_assignee_id', $user_id);
+                    }
                 }
             } else {
                 $q->whereNotNull('drafting_assignee_id');

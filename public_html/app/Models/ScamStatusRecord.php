@@ -45,7 +45,7 @@ class ScamStatusRecord extends Model
     /**
      * Log the record
      */
-    public static function logRecord(Scam $scam, ScamStatusType $type, User|int $causer): ScamStatusRecord
+    public static function logRecord(Scam $scam, ScamStatusType $type, User|int|null $causer): ScamStatusRecord
     {
         $status = $scam->{"{$type->value}Status"};
 
@@ -64,7 +64,7 @@ class ScamStatusRecord extends Model
             'scam_id' => $scam->id,
             'status_id' => $scam->{"{$type->value}_status_id"},
             'status_type' => $type,
-            'causer_id' => is_int($causer) ? $causer : $causer->id,
+            'causer_id' => $causer ? (is_int($causer) ? $causer : $causer->id) : 1,
             'review' => $status?->is_approval_required ? ScamStatusReview::PENDING : null,
         ]);
     }

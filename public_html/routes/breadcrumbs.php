@@ -72,6 +72,10 @@ Bc::for('admin.reports.user-case-report', function (BreadcrumbTrail $trail): voi
     $trail->parent('admin.dashboard');
     $trail->push('User Case Report');
 });
+Bc::for('admin.reports.scam-status-transition-report', function (BreadcrumbTrail $trail): void {
+    $trail->parent('admin.dashboard');
+    $trail->push('Scam Status Transition Report');
+});
 
 Bc::for('admin.preferences.index', function (BreadcrumbTrail $trail): void {
     $trail->parent('admin.dashboard');

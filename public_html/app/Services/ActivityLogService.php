@@ -78,10 +78,14 @@ class ActivityLogService extends Service
 
     private function logEvent(string $description, ActivityEvent $event, ?Model $entity = null, array $properties = [])
     {
-        $activity = activity()->event($event->value);
-        if ($entity) {
-            $activity->performedOn($entity);
+        try {
+            $activity = activity()->event($event->value);
+            if ($entity) {
+                $activity->performedOn($entity);
+            }
+            $activity->withProperties($properties)->log($description);
+        } catch (\Exception $e) {
+            report($e);
         }
-        $activity->withProperties($properties)->log($description);
     }
 }

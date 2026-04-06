@@ -61,6 +61,7 @@ enum Permission: string
     case CUSTOMER_ENQUIRY_LIST = 'customer_enquiry:list';
     case CUSTOMER_ENQUIRY_DELETE = 'customer_enquiry:delete';
     case CUSTOMER_ENQUIRY_UPDATE_STATUS = 'customer_enquiry:update_status';
+    case REPORT_SCAM_STATUS_TRANSITION = 'report:scam_status_transition';
 
     // Scam Type
     case SCAM_TYPE_LIST = 'scam_type:list';

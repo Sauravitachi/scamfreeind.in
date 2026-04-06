@@ -79,6 +79,8 @@ class Scam extends Model
         'sub_admin_assigned_at' => 'datetime',
         'recycled_at' => 'datetime',
         'is_duplicate' => 'boolean',
+        'sales_status_updated_at' => 'datetime',
+        'drafting_status_updated_at' => 'datetime',
     ];
 
     /**

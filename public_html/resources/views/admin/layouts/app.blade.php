@@ -214,8 +214,13 @@
     <script type="text/javascript" src="{{ asset('assets/theme/js/tabler.min.js') }}" defer></script>
     <script type="text/javascript" src="{{ asset('assets/common/plugins/jquery/jquery.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    <script type="text/javascript" src="{{ asset('public/vendor/jsvalidation/js/jsvalidation.min.js') }}"></script>
+    <script>
+        if (typeof laravelValidation !== 'undefined') {
+            laravelValidation.init();
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/simple-notify/dist/simple-notify.min.js"></script>
-    <script type="text/javascript" src="{{ asset('vendor/jsvalidation/js/jsvalidation.js') }}"></script>
     <script type="text/javascript" src="{{ asset('assets/common/plugins/notyf/notyf.min.js') }}"></script>
     <script type="text/javascript" src="{{ asset('assets/common/js/script.js') . "?v={$assetsVersion}" }}"></script>
     <script type="text/javascript" src="{{ asset('assets/theme/script.js') . "?v={$assetsVersion}" }}"></script>

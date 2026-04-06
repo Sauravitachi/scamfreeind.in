@@ -18,7 +18,7 @@
             $container.find(".date_range_picker").flatpickr({
                 mode: "range",
                 enableTime: false,
-                dateFormat: "Y-m-d H:i",
+                dateFormat: "Y-m-d",
                 time_24hr: false,
             });
 

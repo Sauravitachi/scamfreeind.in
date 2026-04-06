@@ -69,9 +69,13 @@ class AuthController extends \App\Foundation\Controller
 
             if (! $loginPermit->canLogin) {
 
-                activity()->event(ActivityEvent::FAILED_LOGIN_ATTEMPT->value)
-                    ->withProperty('message', $loginPermit->message)
-                    ->log(':causer.name_with_username tried to login but failed.');
+                try {
+                    activity()->event(ActivityEvent::FAILED_LOGIN_ATTEMPT->value)
+                        ->withProperty('message', $loginPermit->message)
+                        ->log(':causer.name_with_username tried to login but failed.');
+                } catch (\Exception $e) {
+                    report($e);
+                }
 
                 Auth::logout();
                 $request->session()->invalidate();
@@ -85,13 +89,17 @@ class AuthController extends \App\Foundation\Controller
             // IMPORTANT: regenerate session after successful login
             $request->session()->regenerate();
 
-            activity()->event(ActivityEvent::LOGIN->value)
-                ->log(':causer.name_with_username logged in.');
+            try {
+                activity()->event(ActivityEvent::LOGIN->value)
+                    ->log(':causer.name_with_username logged in.');
 
-            $admin->update([
-                'login_at' => now(),
-                'last_pinged_at' => now(),
-            ]);
+                $admin->update([
+                    'login_at' => now(),
+                    'last_pinged_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                report($e);
+            }
 
             return $this->responseService->json(
                 success: true,
@@ -114,8 +122,12 @@ class AuthController extends \App\Foundation\Controller
 
     public function handleLogout(Request $request)
     {
-        activity()->event(ActivityEvent::LOGOUT->value)
-            ->log(':causer.name_with_username logged out.');
+        try {
+            activity()->event(ActivityEvent::LOGOUT->value)
+                ->log(':causer.name_with_username logged out.');
+        } catch (\Exception $e) {
+            report($e);
+        }
 
         Auth::logout();
 

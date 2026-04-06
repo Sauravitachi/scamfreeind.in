@@ -12,14 +12,16 @@ class RoleRequest extends \App\Foundation\FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(Request $request): array
+    public function rules(): array
     {
+        $role = $this->route('role');
+        $roleId = $role instanceof \App\Models\Role ? $role->id : $role;
         return [
-            'name' => ['required', 'string', 'max:250', Rule::unique('roles', 'name')->ignore($this->route('role'))],
+            'name' => ['required', 'string', 'max:250', "unique:roles,name,{$roleId}"],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string'],
             'user_creatable_roles' => ['nullable', 'array'],
-            'is_admin' => ['nullable', 'in:0,1'],
+            'is_admin' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -122,6 +122,7 @@ $routes = function () {
         Route::resource('user-activities', UserActivityController::class)->only('index');
         Route::prefix('reports')->as('reports.')->controller(ReportController::class)->group(function () {
             Route::match([HttpMethod::GET->value, HttpMethod::POST->value], 'user-case', 'userCaseStatusReport')->name('user-case-report');
+                    Route::get('scam-status-transition', 'scamStatusTransitionReport')->name('scam-status-transition-report');
         });
         Route::prefix('preferences')->as('preferences.')->controller(PreferenceController::class)->group(function () {
             Route::get('/', 'index')->name('index');
