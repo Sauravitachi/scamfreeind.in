@@ -80,6 +80,8 @@ class ScamService extends Service
         $table->addColumn('registered_amount', fn (Scam $scam) => $scam->registered_amount);
         $table->addColumn('formatted_registered_amount', fn (Scam $scam) => $scam->formatted_registered_amount);
 
+        $table->addColumn('state', fn (Scam $scam) => $scam->customer?->state);
+
         return $table;
     }
 
@@ -101,7 +103,7 @@ class ScamService extends Service
         ]);
 
         $query->with([
-            'customer:id,first_name,last_name,dial_code,phone_number,email',
+            'customer:id,first_name,last_name,dial_code,phone_number,email,state',
         ]);
 
         if ($recordsType === 3 && $user->can(Permission::STATUS_UNASSIGNED_SCAM_LIST)) {
@@ -142,11 +144,9 @@ class ScamService extends Service
         }
 
         // sub-admin permission check
-         if ($request->routeIs('admin.sub_admin')) {
+        if ($request->routeIs('admin.sub_admin')) {
             if ($user->can(Permission::SUB_ADMIN_MANAGEMENT->value)) {
-                $query->where(function (Builder $q) use ($user) {
-                    $q->where('sub_admin_id', $user->id)->orWhereNull('sub_admin_id');
-                });
+                $query->where('sub_admin_id', $user->id);
             }
         }
 
@@ -481,10 +481,12 @@ class ScamService extends Service
 
         });
     }
+
+    // Modal Event Handlers
+
     public function handleScamStatusUpdateEvent(Scam $scam, bool $save = false): void
     {
 
-        
         if ($scam->isDirty('sales_status_id') && $scam->sales_status_id) {
             $scam->sales_status_updated_at = now();
         }
@@ -498,10 +500,10 @@ class ScamService extends Service
         }
     }
 
-     public function handleScamStatusUpdatedEvent(Scam $scam, bool $save = false): void
+    public function handleScamStatusUpdatedEvent(Scam $scam, bool $save = false): void
     {
         $authId = Auth::id();
-        if ($scam->wasChanged(['sales_status_id', 'remark', 'scam_amount'])) {
+        if ($scam->isDirty('sales_status_id') || $scam->isDirty('remark') || $scam->isDirty('scam_amount')) {
                     if ($scam->sales_status_id == 7) {
                         $scamAmount = $scam->scam_amount;
                         $remark = strtolower($scam->remark ?? '');
@@ -529,6 +531,8 @@ class ScamService extends Service
                             }
                         }
 
+                        // Only move to User 20 if we are SURE it's a small scam (explicit amount < 10k or matching keywords).
+                        // If amount is null/zero and remark is empty/not specifying small amount, keep it in the general pool (NULL).
                         $isSmall = (!is_null($scamAmount) && (float)$scamAmount > 0 && (float)$scamAmount < 10000) || $remarkMatches;
 
                         if ($isSmall) {
@@ -549,19 +553,19 @@ class ScamService extends Service
                         }
                     }
                 }
-        if ($scam->wasChanged('sales_status_id')) {
+        if ($scam->isDirty('sales_status_id')) {
 
             $scam->sales_status_record_id = ScamStatusRecord::logRecord(scam: $scam, type: ScamStatusType::SALES, causer: $authId)?->id;
 
             UserScamStatusFreeze::checkAndTryFreezeRelease(scam: $scam, statusId: $scam->getOriginal('sales_status_id'), scamStatusType: ScamStatusType::SALES);
 
             // Only skip unassignment if we JUST automatically assigned it to User 20 in this event
-            if (!($scam->wasChanged('sales_assignee_id') && $scam->sales_assignee_id == 20)) {
+            if (!($scam->isDirty('sales_assignee_id') && $scam->sales_assignee_id == 20)) {
                 $this->unassignCaseOnStatusChange($scam, ScamStatusType::SALES);
             }
         }
 
-        if ($scam->wasChanged('drafting_status_id')) {
+        if ($scam->isDirty('drafting_status_id')) {
 
             $scam->drafting_status_record_id = ScamStatusRecord::logRecord(scam: $scam, type: ScamStatusType::DRAFTING, causer: $authId)?->id;
 
@@ -582,7 +586,6 @@ class ScamService extends Service
             $scam->saveQuietly();
         }
     }
-
 
     public function handleScamAssigneeUpdateEvent(Scam $scam, bool $save = false): void
     {
@@ -619,7 +622,7 @@ class ScamService extends Service
     {
         $authId = Auth::id();
 
-        if ($scam->wasChanged('sales_assignee_id')) {
+        if ($scam->isDirty('sales_assignee_id')) {
             if ($scam->sales_assignee_id) {
                 // SendAssignMessageToCustomer::dispatch($scam->id, ScamAssigneeType::SALES->value);
 
@@ -627,7 +630,7 @@ class ScamService extends Service
             }
         }
 
-        if ($scam->wasChanged('drafting_assignee_id')) {
+        if ($scam->isDirty('drafting_assignee_id')) {
             if ($scam->drafting_assignee_id) {
                 // SendAssignMessageToCustomer::dispatch($scam->id, ScamAssigneeType::DRAFTING->value);
 
@@ -635,25 +638,25 @@ class ScamService extends Service
             }
         }
 
-        if ($scam->wasChanged('service_assignee_id')) {
+        if ($scam->isDirty('service_assignee_id')) {
             if ($scam->service_assignee_id) {
                 $scam->latest_service_status_unassign_record_id = null;
             }
         }
 
-        if ($scam->wasChanged('sales_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamStatusType::SALES)) {
+        if ($scam->isDirty('sales_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamStatusType::SALES)) {
             ScamAssigneeRecord::logRecord(scam: $scam, type: ScamAssigneeType::SALES, causer: $authId, unassignStatus: $unassignStatus);
         }
 
-        if ($scam->wasChanged('drafting_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamStatusType::DRAFTING)) {
+        if ($scam->isDirty('drafting_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamStatusType::DRAFTING)) {
             ScamAssigneeRecord::logRecord(scam: $scam, type: ScamAssigneeType::DRAFTING, causer: $authId, unassignStatus: $unassignStatus);
         }
 
-        if ($scam->wasChanged('service_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamAssigneeType::SERVICE)) {
+        if ($scam->isDirty('service_assignee_id') || ($unassignStatus && $unassignStatus->type === ScamAssigneeType::SERVICE)) {
             ScamAssigneeRecord::logRecord(scam: $scam, type: ScamAssigneeType::SERVICE, causer: $authId, unassignStatus: $unassignStatus);
         }
 
-        if ($scam->wasChanged('sub_admin_id') || ($unassignStatus && $unassignStatus->type === ScamAssigneeType::SUB_ADMIN)) {
+        if ($scam->isDirty('sub_admin_id') || ($unassignStatus && $unassignStatus->type === ScamAssigneeType::SUB_ADMIN)) {
             ScamAssigneeRecord::logRecord(scam: $scam, type: ScamAssigneeType::SUB_ADMIN, causer: $authId, unassignStatus: $unassignStatus);
         }
 

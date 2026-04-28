@@ -92,7 +92,7 @@ class AppUiDataController extends Controller
             $appUiData->name = $name;
             $data = new \stdClass;
         } else {
-            $data = json_decode($appUiData->data);
+            $data = $appUiData->getData();
         }
 
 
@@ -110,14 +110,29 @@ class AppUiDataController extends Controller
      */
     public function update(Request $request, $name)
     {
-
         $dataSettings = $this->service->getDataSetting($name);
 
         abort_if(!$dataSettings, 404);
 
         $rules = $dataSettings['validation_rules'];
+        
+        // Expand wildcard rules for flat keys (e.g., expert_section_title_.*)
+        $expandedRules = [];
+        foreach ($rules as $key => $rule) {
+            if (str_contains($key, '.*')) {
+                // Escape special characters and replace .* with a matching group
+                $pattern = '/^' . str_replace(['_', '.*'], ['\_', '(.*)'], $key) . '$/';
+                foreach ($request->all() as $reqKey => $reqVal) {
+                    if (preg_match($pattern, $reqKey)) {
+                        $expandedRules[$reqKey] = $rule;
+                    }
+                }
+            } else {
+                $expandedRules[$key] = $rule;
+            }
+        }
 
-        $request->validated_data = $request->validate($rules);
+        $request->validated_data = $request->validate($expandedRules);
 
         $method = "handle__$name";
 
@@ -150,6 +165,38 @@ class AppUiDataController extends Controller
         $appUiData->save();
 
         return redirect()->route('admin.app-ui-data.index')->with('success', 'UI Updated!');
+    }
+
+    public function handle__expert_section(Request $request, string $name)
+    {
+        $data = $request->validated_data;
+        $appUiData = $this->service->getDataByName($name) ?? new AppUiData;
+        $oldData = $appUiData->getData() ?? new \stdClass;
+
+        // Handle uploaded images
+        foreach ($request->allFiles() as $key => $file) {
+            if (str_starts_with($key, 'expert_section_image_')) {
+                $dir = str_replace('{name}', $name, $this->image_directory);
+                $uploaded = FileService::imageUploader($request, $key, $dir);
+                if ($uploaded) {
+                    $data[$key] = $uploaded;
+                }
+            }
+        }
+        
+        // Restore old image filenames if no new ones were uploaded but we have old ones
+        foreach ($request->all() as $key => $value) {
+           if (str_starts_with($key, 'expert_section_image_') && !$request->hasFile($key)) {
+                if (isset($oldData->$key)) {
+                    $data[$key] = $oldData->$key;
+                }
+           }
+        }
+
+        $appUiData->forceFill(['name' => $name, 'data' => json_encode($data)]);
+        $appUiData->save();
+
+        return redirect()->route('admin.app-ui-data.index')->with('success', 'Expert UI Updated!');
     }
 
     private function saveImage(Request $request, string $imageField, string $name)

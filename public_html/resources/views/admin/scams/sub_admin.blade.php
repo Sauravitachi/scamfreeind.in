@@ -49,7 +49,7 @@
         'offcanvas-class' => 'offcanvas-full'
     ],
     'buttons' => [
-        $pms->scam_random_assigner
+        $pms->any_full_management
             ? [
                 'label' => 'Random Assign',
                 'icon' => 'ti ti-arrows-random',
@@ -162,6 +162,7 @@
                         ['title' => 'Sales Status', 'permit' => $pms->sales_access || $pms->service_access || $pms->drafting_access],
                         ['title' => 'Drafting Assignee', 'permit' => $pms->drafting_management || $pms->service_access],
                         ['title' => 'Drafting Status', 'permit' => $pms->drafting_access],
+                        ['title' => 'State'],
                         ['title' => 'Service Assignee', 'permit' => $pms->service_management],
                         ['title' => $scamTableView->getDateHeaderName($user)],
                         ['title' => 'Action'],
@@ -241,8 +242,9 @@
             firstDraftingStatus,
             SCAM_STATUS_SALES,
             SCAM_STATUS_DRAFTING,
-            subAdminUsers
-        ] = @js([$salesUsers, $draftingUsers, $serviceUsers, $scamStatuses, $firstDraftingStatus, \App\Enums\ScamStatusType::SALES, \App\Enums\ScamStatusType::DRAFTING, $subAdminUsers ?? []]);
+            subAdminUsers,
+            states
+        ] = @js([$salesUsers, $draftingUsers, $serviceUsers, $scamStatuses, $firstDraftingStatus, \App\Enums\ScamStatusType::SALES, \App\Enums\ScamStatusType::DRAFTING, $subAdminUsers ?? [], $states]);
 
         const pms = @js($pms);
 
@@ -373,6 +375,14 @@
                         `<option value="${user.id}" ${userId && userId == user.id ? 'selected' : ''} ${disableOption ? 'disabled' : ''}>${user.name}</option>`;
                 });
                 return `<select class="form-select table-td-select data-select service-assignee-select select2" data-service-assignee="${userId}" data-scam-id="${scamId}" ${!pms.service_management ? 'disabled' : ''}><option value>Select Service Assignee</option>${options}</select>`;
+            },
+            getStateSelect: function(stateId, scamId) {
+                let options = '';
+                states.forEach(function(state) {
+                    options +=
+                        `<option value="${state.id}" ${stateId && stateId == state.id ? 'selected' : ''}>${state.name}</option>`;
+                });
+                return `<select class="form-select table-td-select data-select state-select select2" data-state="${stateId}" data-scam-id="${scamId}"><option value>Select State</option>${options}</select>`;
             },
 
             
@@ -644,6 +654,15 @@
                             }
                         },
                     @endif
+                    {
+                        data: 'state',
+                        name: 'state',
+                        searchable: false,
+                        orderable: false,
+                        render: function(data, type, row, meta) {
+                            return Action.getStateSelect(data, row.id);
+                        }
+                    },
                     @if ($pms->service_management)
                         {
                             data: 'service_assignee_id',
@@ -828,6 +847,23 @@
                     }
                 });
             }
+
+            // State Select
+            $('#scams-table').on('change', '.state-select', function() {
+                const $selectElement = $(this);
+                const scam_id = $selectElement.data('scam-id');
+                const state_id = $selectElement.val();
+                const url = "{{ route('admin.scams.change-state', ':id') }}".replace(':id', scam_id);
+                
+                $.post(url, { state_id }, function(res) {
+                    if (res.success) {
+                        toast.open({ type: 'success', message: 'State updated successfully.' });
+                    } else {
+                        toast.open({ type: 'error', message: res.toast?.message || 'Update failed.' });
+                    }
+                    dtTable.draw(false);
+                });
+            });
 
 
             @if ($pms->sales_access)

@@ -138,7 +138,7 @@
                             <input type="text" name="video_section_video[]" 
                                 class="form-control form-control-lg form-control-solid"
                                 value="{{ $video }}" placeholder="Enter video URL">
-                            <button type="button" class="btn btn-danger remove-item">X</button>
+                            <button type="button" class=" remove-item">X</button>
                         </div>
                     @endforeach
                 @else

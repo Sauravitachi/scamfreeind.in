@@ -32,7 +32,7 @@
                 <div class="col-12">
                     <x-admin.select name='assignees[]' label='Sales Assignee' class="modal-select2" multiple>
                        
-                        @foreach ($salesUsers->where('status', true)->where('has_today_activity', true) as $user)
+                        @foreach ($salesUsers->where('status', true) as $user)
                             <option value="{{ $user->id }}">{{ $user->name }}</option>
                         @endforeach
                     </x-admin.select>
@@ -82,13 +82,9 @@
                 this.registerButton();
              
                 $(document).on('app:page_filter_updated', function (e, data) {
-                    const filteredRecordsCount = data.filteredRecordsCount;
-
-                    if(filteredRecordsCount > 0) {
-                        RANDOM_SCAM_ASSIGN_MODULE.filteredRecordsCount = filteredRecordsCount;
-                        RANDOM_SCAM_ASSIGN_MODULE.isFilterApplied = data.status;
-                        RANDOM_SCAM_ASSIGN_MODULE.toggleAssignButton();
-                    }
+                    RANDOM_SCAM_ASSIGN_MODULE.filteredRecordsCount = data.filteredRecordsCount;
+                    RANDOM_SCAM_ASSIGN_MODULE.isFilterApplied = data.status;
+                    RANDOM_SCAM_ASSIGN_MODULE.toggleAssignButton();
                 });
             },
 
@@ -103,7 +99,7 @@
             },
 
             toggleAssignButton: function() {
-                if(RANDOM_SCAM_ASSIGN_MODULE.isFilterApplied) {
+                if(RANDOM_SCAM_ASSIGN_MODULE.isFilterApplied && RANDOM_SCAM_ASSIGN_MODULE.filteredRecordsCount > 0) {
                     this.$button.parent().show();
                 } else {
                     this.$button.parent().hide();

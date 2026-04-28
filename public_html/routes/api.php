@@ -25,3 +25,4 @@ Route::post('/scam/lead', [ScamLeadController::class, 'store']);
 Route::post('/contact', [ContactController::class, 'store']);
 Route::get('/video-section', [HomeController::class, 'getVideoSectionData']);
 Route::get('/scam-status-report', [ScamStatusReportController::class, 'index']);
+Route::get('/expert-section', [HomeController::class, 'getExpertSectionData']);

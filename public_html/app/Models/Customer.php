@@ -29,7 +29,13 @@ class Customer extends Model implements UserDetailTextContract, WhatsappProfileC
         'email',
         'country_code',
         'phone_number',
+        'state',
     ];
+
+    public function regionState(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(State::class, 'state');
+    }
 
     /**
      * The "booted" method is called when the model is booted.

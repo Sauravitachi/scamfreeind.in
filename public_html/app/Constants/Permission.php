@@ -192,4 +192,10 @@ enum Permission: string
     case APP_UI_DATA_CREATE = 'app_ui_data:create';
     case APP_UI_DATA_UPDATE = 'app_ui_data:update';
     case APP_UI_DATA_DELETE = 'app_ui_data:delete';
+    
+    // State
+    case STATE_LIST = 'state:list';
+    case STATE_CREATE = 'state:create';
+    case STATE_UPDATE = 'state:update';
+    case STATE_DELETE = 'state:delete';
 }

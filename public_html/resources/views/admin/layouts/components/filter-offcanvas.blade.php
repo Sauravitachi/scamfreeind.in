@@ -70,6 +70,10 @@
 
             registerDatatable: function(dtTable) {
                 FilterModule.$dtTable = dtTable;
+
+                dtTable.on('draw', function() {
+                    FilterModule.dispatchFilterUpdateStatus();
+                });
             },
 
             register: function() {
@@ -83,12 +87,6 @@
                 }
 
                 if(FilterModule.$dtTable) {
-
-                    FilterModule.$dtTable.one('draw', function() {
-                        FilterModule.applied = true;
-                        FilterModule.dispatchFilterUpdateStatus();
-                    });
-
                      FilterModule.$dtTable.draw();
                 }
 
@@ -104,12 +102,6 @@
                 }
 
                 if(FilterModule.$dtTable) {
-
-                    FilterModule.$dtTable.one('draw', function() {
-                        FilterModule.applied = false;
-                        FilterModule.dispatchFilterUpdateStatus();
-                    });
-
                      FilterModule.$dtTable.draw();
                 }
 
@@ -118,14 +110,25 @@
 
             isAppliedAny: function() {
 
-                if(!FilterModule.applied) {
-                    return false;
+                let isApplied = false;
+
+                const $recordsTypeSelect = $('#records_type_select');
+                if ($recordsTypeSelect.length > 0) {
+                    const recordsType = $recordsTypeSelect.val();
+                    if (recordsType === '3') {
+                        isApplied = true;
+                    }
                 }
 
-                let isApplied = false;
+                if (isApplied) return true;
+
+                if (!FilterModule.$form) return false;
 
                 FilterModule.$form.find('input, select, textarea').each(function() {
                     let $el = $(this);
+
+                    const name = $el.attr('name');
+                    if (!name || name === '_token') return;
 
                     // For checkboxes/radios, check if any is checked
                     if ($el.is(':checkbox') || $el.is(':radio')) {
@@ -146,9 +149,10 @@
 
             dispatchFilterUpdateStatus: function() {
                 const status = FilterModule.isAppliedAny();
+                const json = FilterModule.$dtTable.ajax.json();
                 $(document).trigger('app:page_filter_updated', { 
                     status: status,
-                    filteredRecordsCount: FilterModule.$dtTable.ajax.json().recordsFiltered
+                    filteredRecordsCount: json ? json.recordsFiltered : 0
                 });
             }
 

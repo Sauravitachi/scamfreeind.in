@@ -72,12 +72,13 @@ class ScamTable
         if ($show_scam_source) $colId++;
 
         $colId++; // Remark
+        
 
         // Sales Assignee
         if ($sales_management || $service_access || $drafting_access) $colId++;
         
         // Sales Status
-        if ($sales_access || $service_access || $drafting_access) $colId++;
+        if ($sales_access || $service_access || $drafting_access ) $colId++;
 
         // Sub Admin
         if (!$isSubAdminPage && ($sales_management || $service_access || $sub_admin_management)) {
@@ -97,6 +98,8 @@ class ScamTable
         } else {
             if ($sales_access || $drafting_access || $service_access) $colId++;
         }
+
+        $colId++; // State
 
         // Service Assignee
         if ($service_management) $colId++;

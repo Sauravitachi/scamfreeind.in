@@ -19,7 +19,7 @@ class BlogRequest extends FormRequest
 
         return [
             'title' => [
-                'required',
+                'nullable',
                 'string',
                 'max:250',
                 Rule::unique('blogs', 'title')->ignore($blogId),

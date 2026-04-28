@@ -35,6 +35,7 @@ use App\Models\ScamSource;
 use App\Models\ScamStatus;
 use App\Models\ScamStatusFile;
 use App\Models\ScamType;
+use App\Models\State;
 use App\Models\User;
 use App\Services\ActivityLogService;
 use App\Services\CustomerEnquiryService;
@@ -85,7 +86,9 @@ class ScamController extends \App\Foundation\Controller
                 Permission::SUB_ADMIN_MANAGEMENT,          // added so sub‑admins can hit the endpoint as well
             ], only: ['assignUser', 'bulkAssignUsers']),
             permit([Permission::SALES_MANAGEMENT, Permission::SALES_MANAGEMENT_SELF, Permission::DRAFTING_MANAGEMENT, Permission::DRAFTING_MANAGEMENT_SELF], only: ['changeStatus']),
-            permit([Permission::SCAM_LIST, Permission::ESCALATION_LIST, Permission::ESCALATION_LIST_SELF], only: ['allScamEscalations']),
+            permit([Permission::SCAM_SALES_STATUS_REVIEW_UPDATE, Permission::SCAM_DRAFTING_STATUS_REVIEW_UPDATE], only: ['changeScamStatusReview']),
+            permit(Permission::SCAM_LIST, only: ['changeState']),
+            permit([Permission::SCAM_LIST, Permission::ESCALATION_LIST, Permission::ESCALATION_LIST_SELF], only: ['selectSearch', 'allScamEscalations']),
             permit(Permission::DELETE_SCAM_STATUS_FILE, only: ['deleteStatusFile', 'deleteScamFile']),
         ];
     }
@@ -118,6 +121,7 @@ class ScamController extends \App\Foundation\Controller
         $scamStatuses = ScamStatus::withExists('statusUpdateFields')
             ->with(['previousStatuses', 'nextStatuses'])->orderBy('title')->get();
         $scamTypes = ScamType::orderBy('title')->get(['id', 'title']);
+        $states = State::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $firstDraftingStatus = $scamStatuses->where('type', ScamStatusType::DRAFTING)->sortBy('index')->first();
         $scamSources = ScamSource::all(['id', 'title']);
 
@@ -146,7 +150,8 @@ class ScamController extends \App\Foundation\Controller
             'scamSources',
             'hasFrozenStatus',
             'reminderScams',
-            'subAdminUsers'
+            'subAdminUsers',
+            'states'
         ));
     }
 
@@ -182,6 +187,7 @@ class ScamController extends \App\Foundation\Controller
         $scamStatuses = ScamStatus::withExists('statusUpdateFields')
             ->with(['previousStatuses', 'nextStatuses'])->orderBy('title')->get();
         $scamTypes = ScamType::orderBy('title')->get(['id', 'title']);
+        $states = State::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $firstDraftingStatus = $scamStatuses->where('type', ScamStatusType::DRAFTING)->sortBy('index')->first();
         $scamSources = ScamSource::all(['id', 'title']);
 
@@ -208,7 +214,8 @@ class ScamController extends \App\Foundation\Controller
             'scamTypes',
             'scamSources',
             'hasFrozenStatus',
-            'reminderScams'
+            'reminderScams',
+            'states'
         ));
     }
 
@@ -381,6 +388,27 @@ class ScamController extends \App\Foundation\Controller
         $this->activityLogService->scamAssign($scam, $request->type, $request->assignee_id);
 
         return $this->responseService->json(success: true);
+    }
+
+    /**
+     * Change the state of the customer belonging to the scam
+     */
+    public function changeState(Request $request, Scam $scam): JsonResponse
+    {
+        $request->validate([
+            'state_id' => ['nullable', 'exists:states,id'],
+        ]);
+
+        $scam->load('customer');
+        if($scam->customer) {
+            $scam->customer->state = $request->state_id;
+            $scam->customer->save();
+
+            $this->activityLogService->updated('customer state', $scam); // or similar
+            return $this->responseService->json(success: true);
+        }
+
+        return $this->responseService->json(success: false, toast: ['type' => 'error', 'message' => 'No Customer Found!']);
     }
 
     /**

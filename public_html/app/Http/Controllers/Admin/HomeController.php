@@ -8,6 +8,7 @@ use App\Services\ResponseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\AppUiData;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class HomeController extends \App\Foundation\Controller
@@ -40,11 +41,28 @@ class HomeController extends \App\Foundation\Controller
 
     public function getVideoSectionData(): JsonResponse
     {
-        $data = AppUiData::getVideoSectionData();
+        $page = request()->get('page',1);
+        $data = Cache::rememberForever('api_video_section_data', function () {
+            $data = AppUiData::getVideoSectionData()->paginate(4);
+            return $data ? $data->getData() : null;
+        });
         
         return $this->responseService->json(
             success: true,
-            data: $data ? $data->getData() : null
+            data: $data
+        );
+    }    
+
+    public function getExpertSectionData(): JsonResponse
+    {
+        $data = Cache::rememberForever('api_expert_section_data', function () {
+            $data = AppUiData::getExpertSectionData();
+            return $data ? $data->getData() : null;
+        });
+        
+        return $this->responseService->json(
+            success: true,
+            data: $data
         );
     }    
     

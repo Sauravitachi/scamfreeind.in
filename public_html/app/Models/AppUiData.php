@@ -24,6 +24,11 @@ class AppUiData extends Model
         return self::where('name', 'video_section')->first();
     }
 
+    public static function getExpertSectionData(): self|null
+    {
+        return self::where('name', 'expert_section')->first();
+    }
+
     
 
     public function getFormattedNameAttribute(): string
@@ -35,7 +40,13 @@ class AppUiData extends Model
 
     public function getData(): \stdClass|null
     {
-        return $this->data ? json_decode($this->data) : null;
+        if (!$this->data) {
+            return null;
+        }
+
+        $decoded = is_string($this->data) ? json_decode($this->data) : $this->data;
+
+        return (object) $decoded;
     }
 
 
