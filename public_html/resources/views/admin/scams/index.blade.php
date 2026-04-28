@@ -185,6 +185,9 @@
                         ],
                         ['title' => 'Remark'],
                         [
+                            'title' => 'State',                         
+                        ],
+                        [
                             'title' => 'Sales Assignee',
                             'permit' => $pms->sales_management || $pms->service_access || $pms->drafting_access,
                         ],
@@ -205,9 +208,7 @@
                             'title' => 'Drafting Status',
                             'permit' => $pms->sales_access || $pms->drafting_access || $pms->service_access,
                         ],
-                        [
-                            'title' => 'State',                         
-                        ],
+                        
                         [
                             'title' => 'Service Assignee',
                             'permit' => $pms->service_management,
@@ -617,6 +618,15 @@
                             return btn;
                         }
                     },
+                    {
+                        data: 'state',
+                        name: 'state',
+                        searchable: false,
+                        orderable: false,
+                        render: function(data, type, row, meta) {
+                            return Action.getStateSelect(data, row.id);
+                        }
+                    },
                     @if ($pms->sales_access || $pms->service_access || $pms->drafting_access)
                         @if ($pms->sales_management || $pms->service_access || $pms->drafting_access)
                             {
@@ -715,15 +725,7 @@
                             }
                         },
                     @endif
-                    {
-                        data: 'state',
-                        name: 'state',
-                        searchable: false,
-                        orderable: false,
-                        render: function(data, type, row, meta) {
-                            return Action.getStateSelect(data, row.id);
-                        }
-                    },
+                    
                     @if ($pms->service_access)
                         @if ($pms->service_management)
                             {

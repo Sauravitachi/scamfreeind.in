@@ -81,6 +81,21 @@ class ScamService extends Service
         $table->addColumn('formatted_registered_amount', fn (Scam $scam) => $scam->formatted_registered_amount);
 
         $table->addColumn('state', fn (Scam $scam) => $scam->customer?->state);
+        $table->addColumn('previous_sales_assignee_ids', function (Scam $scam) use ($request) {
+            $user = $request->user();
+
+            if ($user->hasAnyRole(['Super Admin', 'Admin'])) {
+                return [];
+            }
+
+            return $scam->assigneeRecords
+                ->where('assignee_type', \App\Enums\ScamAssigneeType::SALES)
+                ->pluck('assignee_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+        });
 
         return $table;
     }
@@ -100,6 +115,7 @@ class ScamService extends Service
             'draftingStatusRecord',
             'registrations.scamRegistrationAmount',
             'subAdmin:id,name',
+            'assigneeRecords:id,scam_id,assignee_id,assignee_type',
         ]);
 
         $query->with([
@@ -309,9 +325,18 @@ class ScamService extends Service
 
             $canAssign = $user->can($permission->value);
             if (! $canAssign && $type === 'sub_admin') {
-                // sales managers may update the sub_admin_id even though
-                // they don't own the SUB_ADMIN_MANAGEMENT permission
                 $canAssign = $user->can(Permission::SALES_MANAGEMENT->value);
+            }
+
+            if ($canAssign && $type === 'sales' && $assigneeId && ! $user->hasAnyRole(['Super Admin', 'Admin'])) {
+                $isPreviousAssignee = $scam->assigneeRecords()
+                    ->where('assignee_type', \App\Enums\ScamAssigneeType::SALES)
+                    ->where('assignee_id', $assigneeId)
+                    ->exists();
+
+                if ($isPreviousAssignee && $assigneeId != $scam->sales_assignee_id) {
+                    $canAssign = false;
+                }
             }
 
             if ($canAssign) {
@@ -323,10 +348,10 @@ class ScamService extends Service
 
                 if ($type === 'sub_admin' && $assigneeId) {
 
-                    $scam->fill([
-                        'sales_assignee_id' => null,
-                        'sales_status_id' => null,
-                    ]);
+                    // $scam->fill([
+                    //     'sales_assignee_id' => null,
+                    //     'sales_status_id' => null,
+                    // ]);
                 }
 
                 if ($scam->isDirty($column) || ($type === 'sub_admin' && $assigneeId && ($scam->isDirty('sales_assignee_id') || $scam->isDirty('sales_status_id')))) {
@@ -540,7 +565,7 @@ class ScamService extends Service
                                 $scam->sales_assignee_id = 27;
                                 $scam->sales_assigned_at = now();
                                 $scam->logActivity(
-                                    "Automatically assigned to Sales User ID 27 due to 'Not Interested' status with amount < 10,000 or matching remark",
+                                    "Automatically assigned to Sales User dummy due to 'Not Interested' status with amount < 10,000 or matching remark",
                                     ScamActivityEvent::SALES_ASSIGN
                                 );
 

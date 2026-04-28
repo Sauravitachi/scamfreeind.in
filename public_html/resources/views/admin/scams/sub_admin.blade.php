@@ -284,12 +284,13 @@
                     '';
             },
 
-            getSalesAssigneeSelect: function(userId, scamId) {
+            getSalesAssigneeSelect: function(userId, scamId, previousAssigneeIds = []) {
                 let options = '';
                 salesUsers.forEach(function(user) {
-                    const disableOption = !user.status;
+                    const isPrevious = previousAssigneeIds.includes(user.id) && user.id != userId;
+                    const disableOption = !user.status || isPrevious;
                     options +=
-                        `<option value="${user.id}" ${userId && userId == user.id ? 'selected' : ''} ${disableOption ? 'disabled' : ''}>${user.name}</option>`;
+                        `<option value="${user.id}" ${userId && userId == user.id ? 'selected' : ''} ${disableOption ? 'disabled' : ''}>${user.name}${isPrevious ? ' (Previously Assigned)' : ''}</option>`;
                 });
                 const disable = !pms.sales_management;
                 return `<select class="form-select table-td-select data-select sales-assignee-select select2" data-sales-assignee="${userId}" data-scam-id="${scamId}" ${disable ? 'disabled' : ''}><option value>Select Sales Assignee</option>${options}</select>`;
@@ -574,7 +575,7 @@
                                 if(previousAssigneeName) {
                                     html += `<span class="text-info" title="previous assignee">${previousAssigneeName}</span><br/>`;
                                 }
-                                html += Action.getSalesAssigneeSelect(data, row.id);
+                                html += Action.getSalesAssigneeSelect(data, row.id, row.previous_sales_assignee_ids);
                                 return html;
                             }
                         },

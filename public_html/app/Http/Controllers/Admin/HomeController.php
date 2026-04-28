@@ -41,17 +41,20 @@ class HomeController extends \App\Foundation\Controller
 
     public function getVideoSectionData(): JsonResponse
     {
-        $page = request()->get('page',1);
-        $data = Cache::rememberForever('api_video_section_data', function () {
-            $data = AppUiData::getVideoSectionData()->paginate(4);
-            return $data ? $data->getData() : null;
+        $page = request()->get('page', 1);
+        $cacheKey = "api_video_section_data_page_{$page}";
+
+        $data = Cache::rememberForever($cacheKey, function () {
+            $uiData = AppUiData::getVideoSectionData();
+            return $uiData ? $uiData->getData() : null;
         });
-        
+
         return $this->responseService->json(
             success: true,
             data: $data
         );
-    }    
+    }
+
 
     public function getExpertSectionData(): JsonResponse
     {

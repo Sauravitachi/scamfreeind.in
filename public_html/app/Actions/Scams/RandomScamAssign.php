@@ -27,21 +27,26 @@ class RandomScamAssign
 
     private function assignScams(RandomScamAssignRequest $request): void
     {
+        // Step 1: Get all selected sales assignees who are active
         $assignees = $this->getAssignees($request);
         $countPerAssignee = $request->integer('count', 0);
         $assigneeCount = $assignees->count();
 
-        $totalRequested = $countPerAssignee * $assigneeCount;
-
+        // Step 2: Build the filtered query based on current request filters
+        // - Status filters (e.g., "Hold", "Pending")
+        // - Amount ranges (lower bound, upper bound)
+        // - Other application filters
         $query = $this->buildQuery($request);
 
         $availableCount = $query->count();
+        $totalRequested = $countPerAssignee * $assigneeCount;
 
-        $this->validateRequestedCount($request, $countPerAssignee, $availableCount, $assigneeCount);
+        // Step 3: VALIDATE that enough cases exist for equal distribution
+        $this->validateSufficientCases($availableCount, $totalRequested);
 
-        $scams = $query->inRandomOrder()->limit($totalRequested)->get();
-
-        $this->distributeScams($scams, $assignees);
+        // Step 4: Assign cases to each selected assignee explicitly
+        // This ensures each selected user receives exactly the requested count
+        $this->assignEqualCases($query, $assignees, $countPerAssignee, $request);
     }
 
     private function buildQuery(RandomScamAssignRequest $request): Builder
@@ -65,73 +70,51 @@ class RandomScamAssign
             });
     }
 
-    /**
-     * Validate requested count where $inputCount is count per assignee,
-     * $dbCount is total available scams,
-     * $assigneeCount is number of assignees
-     */
-    private function validateRequestedCount(RandomScamAssignRequest $request, int $inputCount, int $dbCount, int $assigneeCount): void
+    private function validateSufficientCases(int $availableCount, int $totalRequested): void
     {
-        $requiredTotal = $inputCount * $assigneeCount;
-
-        $hasScamAmountFilter = $request->anyFilled('scam_amount_lb', 'scam_amount_ub');
-
-        if ($hasScamAmountFilter) {
-            $this->validateFilteredCount($request, $dbCount, $requiredTotal, $assigneeCount);
-        } else {
-            $this->validateGeneralCount($dbCount, $requiredTotal, $assigneeCount);
-        }
-    }
-
-    private function validateFilteredCount(RandomScamAssignRequest $request, int $dbCount, int $requiredTotal, int $assigneeCount): void
-    {
-        if ($dbCount === 0) {
+        if ($availableCount === 0) {
             throw new HttpResponseException(
                 $this->responseService->errors([
                     'count' => [
-                        'No cases are available with the current assign filters. Please adjust the filter values to include more cases.',
+                        'No cases are available with the current filters. Please adjust the filter values.',
                     ],
                 ])
             );
         }
 
-        $minCountPerAssignee = (int) floor($dbCount / max(1, $assigneeCount));
-
-        if ($dbCount < $requiredTotal) {
+        if ($availableCount < $totalRequested) {
             throw new HttpResponseException(
                 $this->responseService->errors([
                     'count' => [
-                        "There are only {$dbCount} cases available with the current assign filter. ".
-                        "Please provide count per assignee less than or equal to {$minCountPerAssignee}.",
+                        "Not enough cases available for equal distribution. You need {$totalRequested} cases but only {$availableCount} are available. " .
+                        "Please select fewer assignees or reduce the count per assignee.",
                     ],
                 ])
             );
         }
     }
 
-    private function validateGeneralCount(int $dbCount, int $requiredTotal, int $assigneeCount): void
+    private function getAssigneeLoads($assignees, RandomScamAssignRequest $request): array
     {
-        if ($dbCount === 0) {
-            throw new HttpResponseException(
-                $this->responseService->errors([
-                    'count' => [
-                        'No cases are available with the current assign filters. Please adjust the filter values to include more cases.',
-                    ],
-                ])
-            );
+        $assigneeIds = $assignees->pluck('id')->all();
+
+        if (empty($assigneeIds)) {
+            return [];
         }
 
-        if ($dbCount < $requiredTotal) {
-            $maxAssignablePerAssignee = (int) floor($dbCount / $assigneeCount);
-            throw new HttpResponseException(
-                $this->responseService->errors([
-                    'count' => [
-                        "The count must be less than or equal to {$maxAssignablePerAssignee} per assignee. ".
-                        'Please reduce the count accordingly.',
-                    ],
-                ])
-            );
-        }
+        // IMPORTANT: buildQuery() includes ALL filters from the request
+        // This means if a status filter is applied, only scams with that status are counted
+        // Example: If filtering by "Hold" status, only holds are counted for each user's load
+        $query = $this->buildQuery($request);
+
+        $loads = (clone $query)
+            ->whereIn('sales_assignee_id', $assigneeIds)
+            ->select('sales_assignee_id', DB::raw('count(*) as total'))
+            ->groupBy('sales_assignee_id')
+            ->pluck('total', 'sales_assignee_id')
+            ->toArray();
+
+        return array_map('intval', $loads);
     }
 
     private function getAssignees(RandomScamAssignRequest $request)
@@ -144,14 +127,48 @@ class RandomScamAssign
             ->values();
     }
 
-    private function distributeScams($scams, $assignees): void
+    private function assignEqualCases(Builder $query, $assignees, int $countPerAssignee, RandomScamAssignRequest $request): void
     {
-        $totalAssignees = $assignees->count();
-        $index = 0;
+        $assigneeLoads = $this->getAssigneeLoads($assignees, $request);
 
-        foreach ($scams as $scam) {
-            $this->assignScamToUser($scam, $assignees[$index]);
-            $index = ($index + 1) % $totalAssignees;
+        $assignees = $assignees->sortBy(fn (User $user) => $assigneeLoads[$user->id] ?? 0)->values();
+
+        $selectedScamIds = [];
+        $assignments = [];
+
+        foreach ($assignees as $assignee) {
+            $candidateQuery = (clone $query)
+                ->where(function (Builder $q) use ($assignee) {
+                    $q->whereNull('sales_assignee_id')
+                      ->orWhere('sales_assignee_id', '<>', $assignee->id);
+                });
+
+            if (! empty($selectedScamIds)) {
+                $candidateQuery->whereNotIn('scams.id', $selectedScamIds);
+            }
+
+            $scamIds = $candidateQuery->inRandomOrder()->limit($countPerAssignee)->pluck('id')->all();
+
+            if (count($scamIds) < $countPerAssignee) {
+                throw new HttpResponseException(
+                    $this->responseService->errors([
+                        'count' => [
+                            'Not enough assignable cases are available for the selected users. Please reduce the count per assignee or adjust the filters.',
+                        ],
+                    ])
+                );
+            }
+
+            foreach ($scamIds as $scamId) {
+                $selectedScamIds[] = $scamId;
+                $assignments[$scamId] = $assignee;
+            }
+        }
+
+        $scams = Scam::whereIn('id', array_keys($assignments))->get()->keyBy('id');
+
+        foreach ($assignments as $scamId => $assignee) {
+            $this->assignScamToUser($scams[$scamId], $assignee);
         }
     }
 

@@ -1,46 +1,30 @@
 @php /** @var \App\Models\Scam $scam */ @endphp
 
-@php
-    $statusRecords = $scam->statusRecords->where('status_type', $statusType);
-    if($causer) {
-        $statusRecords = $statusRecords->where('causer_id', $causer->id);
-    }
-@endphp
-
 <div class="card mb-3">
     <div class="card-body">
         <div class="h2 card-title">
-            Case {{ ucfirst($statusType->value) }} Status Lifecycle
+            Case Lifecycle
         </div>
         <div class="h3 t-3">
-            @if ($statusRecords->isNotEmpty())
+            @if ($scam->activities->isNotEmpty())
                 <div class="timeline_container">
                     <ul class="timeline_ul">
-                        @foreach ($statusRecords as $statusRecord)
+                        @foreach ($scam->activities as $activity)
                             <li class="timeline_li">
-                                @if ($at = $statusRecord->created_at)
+                                @if ($at = $activity->created_at)
                                     <div class="timeline_time">
                                         {{ format_date($at) }}
-                                        @if ($statusRecord->causer)
+                                        @if ($activity->user)
                                             by
                                             <span class="text-primary">
-                                                {{ $statusRecord->causer->name_with_username }}
+                                                {{ $activity->user->name_with_username }} (ID:{{ $activity->user->id }})
                                             </span>
                                         @endif
                                     </div>
                                 @endif
                                 <p class="timeline_p">
-                                    @if ($statusRecord->status)
-                                        <span class="text-muted">Updated status to :</span> {{ $statusRecord->status->title }}
-                                    @else
-                                        Removed status
-                                    @endif
+                                    {{ $activity->description }}
                                 </p>
-                                @if ($statusRecord->status_remark)
-                                    <p class="text-muted fw-normal">
-                                    <span class="text-dark">Remark: </span> {{ $statusRecord->status_remark }}
-                                    </p>
-                                @endif
                             </li>
                         @endforeach
                     </ul>
@@ -54,3 +38,23 @@
         </div>
     </div>
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

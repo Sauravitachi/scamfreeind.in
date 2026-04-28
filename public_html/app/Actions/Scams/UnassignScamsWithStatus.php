@@ -26,9 +26,14 @@ class UnassignScamsWithStatus
             $count = 0;
             foreach ([ScamStatusType::SALES, ScamStatusType::DRAFTING] as $statusType) {
                 $count += $this->unassignScams($statusType);           
-                $count += $this->unassignIfNoStatusChange($statusType);
+                
+                // Removed for now: unassigned in without status in 18hr
+                if ($statusType !== ScamStatusType::SALES) {
+                    $count += $this->unassignIfNoStatusChange($statusType);
+                }
             }
-            $count += $this->unassignSalesIfNoUpdateFor18Hours();
+            // Removed for now: unassign sales even with status if no update for 18 hours
+            // $count += $this->unassignSalesIfNoUpdateFor18Hours();
             $count += $this->holdStatus();
 
             if ($count > 0) {

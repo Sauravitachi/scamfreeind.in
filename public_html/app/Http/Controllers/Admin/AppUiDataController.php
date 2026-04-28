@@ -7,6 +7,7 @@ use App\Services\FileService;
 use App\Services\AppUiDataService;
 use App\Models\AppUiData;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use JsValidator;
 
 class AppUiDataController extends Controller
@@ -164,6 +165,11 @@ class AppUiDataController extends Controller
 
         $appUiData->save();
 
+        Cache::forget('api_video_section_data');
+        for ($i = 1; $i <= 10; $i++) {
+            Cache::forget("api_video_section_data_page_{$i}");
+        }
+
         return redirect()->route('admin.app-ui-data.index')->with('success', 'UI Updated!');
     }
 
@@ -195,6 +201,8 @@ class AppUiDataController extends Controller
 
         $appUiData->forceFill(['name' => $name, 'data' => json_encode($data)]);
         $appUiData->save();
+
+        Cache::forget('api_expert_section_data');
 
         return redirect()->route('admin.app-ui-data.index')->with('success', 'Expert UI Updated!');
     }

@@ -11,11 +11,11 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::call(function () {
-    Log::info('every minute unassignment task.');
+// Schedule::call(function () {
+//     Log::info('every minute unassignment task.');
 
-    $scamsCount = (new UnassignScamsWithStatus())->handle();
-    $enquiriesCount = (new UnassignEnquiriesWithStatus())->handle();
+//     $scamsCount = (new UnassignScamsWithStatus())->handle();
+//     $enquiriesCount = (new UnassignEnquiriesWithStatus())->handle();
 
-    Log::info("every minute unassignment task completed. Scams unassigned: {$scamsCount}, Enquiries unassigned: {$enquiriesCount}");
-})->everyMinute();
+//     Log::info("every minute unassignment task completed. Scams unassigned: {$scamsCount}, Enquiries unassigned: {$enquiriesCount}");
+// })->everyMinute();
