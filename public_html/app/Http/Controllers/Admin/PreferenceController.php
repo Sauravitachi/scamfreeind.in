@@ -45,4 +45,5 @@ class PreferenceController extends \App\Foundation\Controller implements HasMidd
 
         return redirect()->back()->with('toast', new Toast(type: 'success', message: 'Preferences Saved!'));
     }
+     
 }

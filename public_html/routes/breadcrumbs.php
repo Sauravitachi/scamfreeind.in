@@ -61,17 +61,20 @@ Bc::resource(name: 'customers', pluralTitle: 'Customers', singularTitle: 'Custom
 Bc::resource(name: 'scams', pluralTitle: 'Scams', singularTitle: 'Scam');
 Bc::resource(name: 'customer-enquiries', pluralTitle: 'Customer Enquiries', singularTitle: 'Customer Enquiry');
 Bc::resource(name: 'scam-leads', pluralTitle: 'Scam Leads', singularTitle: 'Scam Lead');
+Bc::resource(name: 'lawyer', pluralTitle: 'Lawyer Leads', singularTitle: 'Lawyer Lead');
 Bc::resource(name: 'escalations', pluralTitle: 'Escalations', singularTitle: 'Escalation');
 Bc::resource(name: 'notifications', pluralTitle: 'Notifications', singularTitle: 'Notification');
 Bc::resource(name: 'user-activities', pluralTitle: 'User Activities', singularTitle: 'User Activity');
 Bc::resource(name: 'blog', pluralTitle: 'Blogs', singularTitle: 'Blog');
 Bc::resource(name: 'app-ui-data', pluralTitle: 'App UI Datas', singularTitle: 'App UI Data');
+Bc::resource(name: 'states', pluralTitle: 'States', singularTitle: 'State');
 Bc::resource('whatsapp-message-logs', pluralTitle: 'Whatsapp Message Logs', singularTitle: 'Whatsapp Message Log');
 
 Bc::for('admin.reports.user-case-report', function (BreadcrumbTrail $trail): void {
     $trail->parent('admin.dashboard');
     $trail->push('User Case Report');
 });
+
 Bc::for('admin.reports.scam-status-transition-report', function (BreadcrumbTrail $trail): void {
     $trail->parent('admin.dashboard');
     $trail->push('Scam Status Transition Report');

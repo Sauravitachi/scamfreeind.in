@@ -175,7 +175,7 @@
                     'data' => [
                         ['title' => 'Sr.'],
                         ['title' => '', 'permit' => $pms->bulkSelectedRequired],
-                        ['title' => 'Track Id'],
+                        ['title' => 'Track Id', 'permit' => $user->userType() !== 'sales'],
                         ['title' => 'Customer'],
                         ['title' => 'Scam Type'],
                         ['title' => 'Scam Amount'],
@@ -184,9 +184,6 @@
                             'permit' => $pms->show_scam_source
                         ],
                         ['title' => 'Remark'],
-                        [
-                            'title' => 'State',                         
-                        ],
                         [
                             'title' => 'Sales Assignee',
                             'permit' => $pms->sales_management || $pms->service_access || $pms->drafting_access,
@@ -208,7 +205,9 @@
                             'title' => 'Drafting Status',
                             'permit' => $pms->sales_access || $pms->drafting_access || $pms->service_access,
                         ],
-                        
+                        [
+                            'title' => 'State',                         
+                        ],
                         [
                             'title' => 'Service Assignee',
                             'permit' => $pms->service_management,
@@ -514,18 +513,21 @@
                             render: DataTable.render.select(),
                             targets: 0
                         },
-                    @endif {
-                        data: 'track_id',
-                        name: 'track_id',
-                        render: function(data, type, row, meta) {
-                            const id = row['id'];
-                            const $elem = $(HtmlTag.span(data))
-                                .attr('role', 'button')
-                                .attr('onclick', `ScamDetailModule.open(${id})`)
-                                .addClass('text-decoration-underline');
-                            return $elem.outerHtml();
-                        }
-                    },
+                    @endif
+                    @if ($user->userType() !== 'sales')
+                        {
+                            data: 'track_id',
+                            name: 'track_id',
+                            render: function(data, type, row, meta) {
+                                const id = row['id'];
+                                const $elem = $(HtmlTag.span(data))
+                                    .attr('role', 'button')
+                                    .attr('onclick', `ScamDetailModule.open(${id})`)
+                                    .addClass('text-decoration-underline');
+                                return $elem.outerHtml();
+                            }
+                        },
+                    @endif
                     {
                         data: 'customer_info',
                         name: 'customer_info',
@@ -616,15 +618,6 @@
                             `;
 
                             return btn;
-                        }
-                    },
-                    {
-                        data: 'state',
-                        name: 'state',
-                        searchable: false,
-                        orderable: false,
-                        render: function(data, type, row, meta) {
-                            return Action.getStateSelect(data, row.id);
                         }
                     },
                     @if ($pms->sales_access || $pms->service_access || $pms->drafting_access)
@@ -725,7 +718,15 @@
                             }
                         },
                     @endif
-                    
+                    {
+                        data: 'state',
+                        name: 'state',
+                        searchable: false,
+                        orderable: false,
+                        render: function(data, type, row, meta) {
+                            return Action.getStateSelect(data, row.id);
+                        }
+                    },
                     @if ($pms->service_access)
                         @if ($pms->service_management)
                             {
@@ -1363,3 +1364,4 @@
 
     </script>
 @endpush
+

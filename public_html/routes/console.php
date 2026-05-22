@@ -19,3 +19,5 @@ Artisan::command('inspire', function () {
 
 //     Log::info("every minute unassignment task completed. Scams unassigned: {$scamsCount}, Enquiries unassigned: {$enquiriesCount}");
 // })->everyMinute();
+Schedule::command('users:update-status inactive')->dailyAt(' :00');
+Schedule::command('users:update-status active')->dailyAt('09:30');

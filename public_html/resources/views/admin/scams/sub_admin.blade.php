@@ -165,6 +165,7 @@
                         ['title' => 'State'],
                         ['title' => 'Service Assignee', 'permit' => $pms->service_management],
                         ['title' => $scamTableView->getDateHeaderName($user)],
+                        ['title' => 'Sales Assigned Date'],
                         ['title' => 'Action'],
                     ],
                 ])
@@ -677,6 +678,14 @@
                     @endif {
                         data: @js($scamTableView->getDateFieldName($user)),
                         name: @js($scamTableView->getDateFieldName($user)),
+                        searchable: false,
+                        render: function(data, type, row, meta) {
+                            return data;
+                        }
+                    },
+                    {
+                        data: 'sales_assigned_at',
+                        name: 'sales_assigned_at',
                         searchable: false,
                         render: function(data, type, row, meta) {
                             return data;

@@ -30,19 +30,13 @@
             font-feature-settings: "cv03", "cv04", "cv11";
         }
     </style>
-
-    
-
     <x-admin.microsoft-clarity />
 </head>
-
-
-
 <body class=" d-flex flex-column">
     <script src="{{ asset('assets/theme/js/demo-theme.min.js') }}"></script>
     <div class="row g-0 flex-fill">
         <div class="col-12 col-lg-6 col-xl-4 d-flex flex-column justify-content-center">
-            <div class="container container-tight my-5 px-lg-5 flex-grow-1 d-flex flex-column justify-content-center">
+            <div class="container container-tight my-5 px-lg-5 flex-grow-1 d-flex flex-column justify-content-center" style="max-width: 450px;">
                 <div class="text-center mb-4">
                     <strong class="h1">
                         {{ config('settings.brand_name') }}
@@ -71,7 +65,7 @@
                         <label class="form-label">
                             Password
                         </label>
-                        <input name="password" type="password" class="form-control is-invalid"
+                        <input name="password" type="password" class="form-control"
                             placeholder="Your password" autocomplete="off">
                     </div>
                     <div class="mt-4">
@@ -82,7 +76,7 @@
                     </div>
                     
                     <div class="form-footer">
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn btn-primary w-100 py-2 fs-3 shadow-sm">
                             Sign in
                         </button>
                     </div>
@@ -98,7 +92,7 @@
                             <ul class="list-inline list-inline-dots mb-0">
                                 <li class="list-inline-item">
                                     Copyright &copy; {{ date('Y') }}
-                                    <a href="https://adigitalblogger.com" class="link-secondary" target="_blank">
+                                    <a href="https://scamfreeind.in" class="link-secondary" target="_blank">
                                         {{ config('settings.brand_name') }}
                                     </a>.
                                     All rights reserved.
@@ -110,10 +104,17 @@
             </footer>
             
         </div>
-        <div class="col-12 col-lg-6 col-xl-8 d-none d-lg-block">
+        <div class="col-12 col-lg-6 col-xl-8 d-none d-lg-block" >
             <!-- Photo -->
-            <div class="bg-cover h-100 min-vh-100"
-                style="background-image: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-1.2.1-1&auto=format&fit=crop&w=1950&q=80')">
+            <div class="bg-cover h-100 min-vh-100" style="background-image: url('{{ asset('assets/theme/img/image.png') }}'); background-size: 80%; background-repeat: no-repeat; background-position: center; background-color: #f8fafc;">
+                <div class="h-100 w-100 d-flex flex-column justify-content-center align-items-center text-white p-5"
+                    style="background: radial-gradient(circle at center, rgba(15, 23, 42, 0.1) 0%, rgba(15, 23, 42, 0.4) 100%); backdrop-filter: blur(2px);">
+                    <div class="text-center">
+                        <div class="mb-4">                            
+                        </div>
+                        
+                    </div>
+                </div>
             </div>
         </div>
     </div>

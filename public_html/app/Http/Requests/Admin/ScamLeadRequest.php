@@ -14,7 +14,7 @@ class ScamLeadRequest extends FormRequest
     {
         $this->merge([
             'phone_number' => $this->input('phone_number') ?? $this->input('phone'),
-            'customer_description' => $this->input('customer_description') ?? $this->input('description'),
+            'customer_description' => $this->input('customer_description') ?? $this->input('description') ?? $this->input('message'),
         ]);
     }
 
@@ -32,6 +32,9 @@ class ScamLeadRequest extends FormRequest
             'phone_number' => ['required', 'string', 'min:8', 'max:20'],
             'scam_source_id' => ['nullable', 'integer', Rule::exists('scam_sources', 'id')],
             'scam_type_id' => ['nullable', 'integer', Rule::exists('scam_types', 'id')],
+            'problem_type_id' => ['nullable', 'integer', Rule::exists('problem_types', 'id')],
+            'problem_type' => ['nullable', 'string', 'max:250'],
+            'problemType' => ['nullable', 'string', 'max:250'],
             'scam_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999999'],
             'customer_description' => ['nullable', 'string', 'max:2000'],
         ];
@@ -47,6 +50,9 @@ class ScamLeadRequest extends FormRequest
             'customer_description' => 'description',
             'scam_source_id' => 'scam source',
             'scam_type_id' => 'scam type',
+            'problem_type_id' => 'problem type',
+            'problem_type' => 'problem type',
+            'problemType' => 'problem type',
         ];
     }
 }

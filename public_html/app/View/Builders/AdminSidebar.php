@@ -13,6 +13,7 @@ class AdminSidebar extends Sidebar
 
         // Dashboard
         $this->add('dashboard', 'Dashboard', 'ti ti-home', route('admin.home'));
+        $this->add('chat', 'Chat Window', 'ti ti-message', route('admin.chat'));
 
         // User Management
         if (
@@ -66,6 +67,9 @@ class AdminSidebar extends Sidebar
 
             if ($this->user->hasPermissionTo(Permission::SCAM_LEAD_LIST->value)) {
                 $this->addSubmenu(title: 'Scam Leads', url: route('admin.scam-leads.index'));
+            }
+            if ($this->user->hasPermissionTo(Permission::SCAM_LEAD_LIST->value)) {
+                $this->addSubmenu(title: 'Lawyer Leads', url: route('admin.lawyer.index'));
             }
 
         if ($this->user->hasPermissionTo(Permission::CUSTOMER_ENQUIRY_LIST->value)) {
@@ -179,7 +183,7 @@ class AdminSidebar extends Sidebar
             if ($this->user->can(Permission::USER_PREFERENCES->value)) {
                 $this->addSubmenu(title: 'User Preferences', url: route('admin.preferences.index'));
             }
-
+           
             if ($this->user->can(Permission::LOGIN_SETTINGS->value)) {
                 $this->addSubmenu(title: 'Login Settings', url: route('admin.settings.login'));
             }

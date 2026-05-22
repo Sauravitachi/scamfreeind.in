@@ -54,7 +54,15 @@ class HomeController extends \App\Foundation\Controller
             data: $data
         );
     }
+    public function chat(Request $request): View
+        {
+            $conversation = \App\Models\Conversation::firstOrCreate([
+                'name' => 'General Chat',
+                'is_group' => true,
+            ]);
 
+            return view('admin.home.chat', compact('conversation'));
+        }
 
     public function getExpertSectionData(): JsonResponse
     {

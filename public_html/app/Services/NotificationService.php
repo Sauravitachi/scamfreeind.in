@@ -20,7 +20,7 @@ class NotificationService extends Service
 
         $query->select(['id', 'data', 'created_at']);
 
-        $query->where('notifiable_type', \App\Models\User::class)->where('notifiable_id', $user->id);
+        $query->where('notifiable_type', get_class($user))->where('notifiable_id', $user->id);
 
         if (($type = $request->get('type')) && in_array($type, ['read', 'unread'])) {
             $query->{$type === 'read' ? 'whereNotNull' : 'whereNull'}('read_at');

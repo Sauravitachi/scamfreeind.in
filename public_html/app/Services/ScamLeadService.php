@@ -29,19 +29,23 @@ use Yajra\DataTables\EloquentDataTable;
 
 class ScamLeadService extends Service
 {
-    public function dataTable(Request $request): EloquentDataTable
+    public function dataTable(Request $request, ?Builder $query = null): EloquentDataTable
     {
-        $query = ScamLead::query();
+        $query ??= ScamLead::query();
+        $table = $query->getModel()->getTable();
 
         $query->with('scamSource:id,slug,title');
 
         $query->with('existingCustomer:id,track_id,first_name,last_name,phone_number,country_code,dial_code,email');
 
-        $query->leftJoin('scam_types', 'scam_leads.scam_type_id', '=', 'scam_types.id');
+        $typeForeignKey = ($table === 'lawyer_leads') ? 'problem_type_id' : 'scam_type_id';
+        $typeTable = ($table === 'lawyer_leads') ? 'problem_types' : 'scam_types';
+
+        $query->leftJoin($typeTable, "{$table}.{$typeForeignKey}", '=', "{$typeTable}.id");
 
         $query->select([
-            'scam_leads.*',
-            'scam_types.title as scam_type',
+            "{$table}.*",
+            "{$typeTable}.title as scam_type",
         ]);
 
         $query->where('is_duplicate', false);
@@ -49,8 +53,8 @@ class ScamLeadService extends Service
         /**
          * Scam Type Filter
          */
-        $query->when($request->filled('filter_scam_type_id'), function ($q) use ($request) {
-            $q->where('scam_type_id', $request->input('filter_scam_type_id'));
+        $query->when($request->filled('filter_scam_type_id'), function ($q) use ($request, $typeForeignKey) {
+            $q->where($typeForeignKey, $request->input('filter_scam_type_id'));
         });
 
         /**
@@ -77,9 +81,9 @@ class ScamLeadService extends Service
         /**
          * Created at range filter
          */
-        $query->when($request->filled('filter_created_at'), function (Builder $q) use ($request) {
+        $query->when($request->filled('filter_created_at'), function (Builder $q) use ($request, $table) {
             $range = carbon_date_range($request->input('filter_created_at'), 'to', expandDates: true);
-            $q->whereBetween('scam_leads.created_at', [$range->start, $range->end]);
+            $q->whereBetween("{$table}.created_at", [$range->start, $range->end]);
         });
 
         $table = datatables()->eloquent($query);
@@ -129,9 +133,9 @@ class ScamLeadService extends Service
         return $table;
     }
 
-    public function create(ScamLeadRequest $request): ScamLead
+    public function create(ScamLeadRequest $request, string $modelClass = ScamLead::class): ScamLead
     {
-        return ScamLead::create($request->validated());
+        return $modelClass::create($request->validated());
     }
 
     public function update(ScamLead $scamLead, ScamLeadRequest $request): bool
@@ -172,8 +176,19 @@ class ScamLeadService extends Service
                 'email' => $scamLead->email,
             ]);
 
+            $scamTypeId = null;
+            if ($scamLead->problem_type_id && $scamLead->scamType) {
+                $scamType = ScamType::firstOrCreate(
+                    ['slug' => $scamLead->scamType->slug],
+                    ['title' => $scamLead->scamType->title]
+                );
+                $scamTypeId = $scamType->id;
+            } else {
+                $scamTypeId = $scamLead->scam_type_id ?? ScamType::default(['id'])?->id;
+            }
+
             $scam = $customer->scams()->create([
-                'scam_type_id' => $scamLead->scam_type_id ?? ScamType::default(['id'])?->id,
+                'scam_type_id' => $scamTypeId,
                 'scam_amount' => $scamLead->scam_amount,
                 'customer_description' => $scamLead->customer_description,
                 'source' => $scamLead->source,
@@ -185,7 +200,8 @@ class ScamLeadService extends Service
             }
 
             // Sync existing customer ID for other leads with same phone details
-            ScamLead::wherePhoneDetails($scamLead->phone_number, $scamLead->country_code ?? 'in')
+            $scamLeadClass = get_class($scamLead);
+            $scamLeadClass::wherePhoneDetails($scamLead->phone_number, $scamLead->country_code ?? 'in')
                 ->whereNull('existing_customer_id')
                 ->update(['existing_customer_id' => $customer->id]);
 
@@ -237,18 +253,18 @@ class ScamLeadService extends Service
         return $sltErrors;
     }
 
-    public function bulkDelete(BulkDeleteScamLeadRequest $request): ?bool
+    public function bulkDelete(BulkDeleteScamLeadRequest $request, string $modelClass = ScamLead::class): ?bool
     {
         $ids = $request->validated('ids');
 
-        return ScamLead::whereIn('id', $ids)->delete();
+        return $modelClass::whereIn('id', $ids)->delete();
     }
 
-    public function bulkTransfer(BulkTransferScamLeadRequest $request): bool
+    public function bulkTransfer(BulkTransferScamLeadRequest $request, string $modelClass = ScamLead::class): bool
     {
         $ids = $request->validated('ids');
 
-        $scamLeads = ScamLead::whereIn('id', $ids)->whereNull('errors')->get();
+        $scamLeads = $modelClass::whereIn('id', $ids)->whereNull('errors')->get();
 
         if ($scamLeads->count() <= 0) {
             throw new InvalidRequestException('No valid selected leads found for transfer!');
@@ -303,7 +319,8 @@ class ScamLeadService extends Service
      */
     public function syncIsDuplicateCallback(ScamLead $scamLead, string $event = 'update'): void
     {
-        $leads = ScamLead::query()
+        $scamLeadClass = get_class($scamLead);
+        $leads = $scamLeadClass::query()
             ->where('phone_number', $scamLead->phone_number)
             ->where('country_code', $scamLead->country_code)
             ->when($event === 'delete', fn($q) => $q->where('id', '!=', $scamLead->id))
@@ -330,12 +347,12 @@ class ScamLeadService extends Service
         $otherLeadIds = $leads->pluck('id')->filter(fn($id) => $id !== $lastLeadId);
 
         // Batch update others
-        ScamLead::whereIn('id', $otherLeadIds)
+        $scamLeadClass::whereIn('id', $otherLeadIds)
             ->where('is_duplicate', false)
             ->update(['is_duplicate' => true, 'count' => 0]);
 
         // Update the last one
-        ScamLead::where('id', $lastLeadId)
+        $scamLeadClass::where('id', $lastLeadId)
             ->update(['is_duplicate' => false, 'count' => $count]);
     }
 
