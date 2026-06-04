@@ -26,6 +26,7 @@ class LawyerLead extends ScamLead
         'phone_number',
         'scam_amount',
         'problem_type_id',
+        'lawyer_id',
         'customer_description',
         'source',
         'is_duplicate',
@@ -40,5 +41,13 @@ class LawyerLead extends ScamLead
     public function scamType(): BelongsTo
     {
         return $this->belongsTo(ProblemType::class, 'problem_type_id');
+    }
+
+    /**
+     * Get the lawyer assigned to this lawyer lead.
+     */
+    public function lawyer(): BelongsTo
+    {
+        return $this->belongsTo(Lawyer::class, 'lawyer_id');
     }
 }

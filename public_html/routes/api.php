@@ -32,3 +32,4 @@ Route::get('/video-section', [HomeController::class, 'getVideoSectionData']);
 Route::get('/expert-section', [HomeController::class, 'getExpertSectionData']);
 Route::get('/astrologers', [HomeController::class, 'getExpertSectionData']);
 Route::post('/astrologer/consult', [AstrologerConsultationController::class, 'store']);
+Route::get('/lawyer/list', [LawyerController::class, 'lawyers']);

@@ -36,9 +36,16 @@
         </div>
 
         <div class="col-lg-4">
-            <x-admin.select2-ajax name='scam_source_id' label='Scam Source' id="scam_source_id" placeholder='Search Scam Source' :route="route('admin.scam-sources.select-search')" :default="$scamLead?->scamSource ? ['id' => $scamLead?->scamSource->id, 'label' => $scamLead?->scamSource->title] : null" minimumInputLength="0" paginate />
+            <x-admin.select2-ajax name='scam_source_id' label='Source' id="scam_source_id" placeholder='Search Scam Source' :route="route('admin.scam-sources.select-search')" :default="$scamLead?->scamSource ? ['id' => $scamLead?->scamSource->id, 'label' => $scamLead?->scamSource->title] : null" minimumInputLength="0" paginate />
         </div>
-
+        <div class="col-lg-4">
+            <x-admin.select name='lawyer_id' label='Lawyer Name' class="select2">
+                <option value="" selected disabled>Select Lawyer Name</option>
+                @foreach ($lawyers as $lawyer)
+                    <option value="{{ $lawyer->id }}" @selected($scamLead && $scamLead->lawyer_id == $lawyer->id)>{{ $lawyer->name }}</option>
+                @endforeach
+            </x-admin.select>
+        </div>
         <div class="col-lg-4">
             <x-admin.select name='problem_type_id' label='Problem Type' class="select2">
                 <option value="" selected disabled>Select Problem Type</option>

@@ -198,4 +198,16 @@ enum Permission: string
     case STATE_CREATE = 'state:create';
     case STATE_UPDATE = 'state:update';
     case STATE_DELETE = 'state:delete';
+
+      // Lawyer Management
+    case LAWYER_LIST = 'lawyer:list';
+    case LAWYER_CREATE = 'lawyer:create';
+    case LAWYER_UPDATE = 'lawyer:update';
+    case LAWYER_DELETE = 'lawyer:delete';
+
+    // Specialization Management
+    case SPECIALIZATION_LIST = 'specialization:list';
+    case SPECIALIZATION_CREATE = 'specialization:create';
+    case SPECIALIZATION_UPDATE = 'specialization:update';
+    case SPECIALIZATION_DELETE = 'specialization:delete';
 }

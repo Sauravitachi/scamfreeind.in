@@ -122,6 +122,8 @@ class AdminSidebar extends Sidebar
                 Permission::SCAM_SOURCE_LIST->value,
                 Permission::CUSTOMER_ENQUIRY_STATUS_LIST->value,
                 Permission::SCAM_REGISTRATION_AMOUNT_LIST->value,
+                Permission::LAWYER_LIST->value,
+                Permission::SPECIALIZATION_LIST->value,
             ])
         ) {
             $this->add(name: 'master', title: 'Master', icon: 'ti ti-brand-envato', url: null);
@@ -144,6 +146,14 @@ class AdminSidebar extends Sidebar
 
             if ($this->user->can(Permission::SCAM_REGISTRATION_AMOUNT_LIST->value)) {
                 $this->addSubmenu(title: 'Scam Registration Amounts', url: route('admin.scam-registration-amounts.index'));
+            }
+
+            if ($this->user->can(Permission::LAWYER_LIST->value)) {
+                $this->addSubmenu(title: 'Lawyers', url: route('admin.lawyers.index'));
+            }
+
+            if ($this->user->can(Permission::SPECIALIZATION_LIST->value)) {
+                $this->addSubmenu(title: 'Specializations', url: route('admin.specializations.index'));
             }
         }
 

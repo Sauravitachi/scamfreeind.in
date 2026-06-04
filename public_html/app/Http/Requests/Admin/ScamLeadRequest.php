@@ -33,6 +33,7 @@ class ScamLeadRequest extends FormRequest
             'scam_source_id' => ['nullable', 'integer', Rule::exists('scam_sources', 'id')],
             'scam_type_id' => ['nullable', 'integer', Rule::exists('scam_types', 'id')],
             'problem_type_id' => ['nullable', 'integer', Rule::exists('problem_types', 'id')],
+            'lawyer_id' => ['nullable', 'integer', Rule::exists('lawyers', 'id')],
             'problem_type' => ['nullable', 'string', 'max:250'],
             'problemType' => ['nullable', 'string', 'max:250'],
             'scam_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999999'],
@@ -51,6 +52,7 @@ class ScamLeadRequest extends FormRequest
             'scam_source_id' => 'scam source',
             'scam_type_id' => 'scam type',
             'problem_type_id' => 'problem type',
+            'lawyer_id' => 'lawyer',
             'problem_type' => 'problem type',
             'problemType' => 'problem type',
         ];

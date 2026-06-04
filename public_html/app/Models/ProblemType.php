@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Foundation\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ProblemType extends Model
 {
@@ -63,5 +64,14 @@ class ProblemType extends Model
     public function lawyerLeads(): HasMany
     {
         return $this->hasMany(LawyerLead::class, 'problem_type_id');
+    }
+
+    /**
+     * Get all lawyers specializing in this problem type.
+     */
+    public function lawyers(): BelongsToMany
+    {
+        return $this->belongsToMany(Lawyer::class, 'lawyer_specializations', 'problem_type_id', 'lawyer_id')
+            ->withTimestamps();
     }
 }

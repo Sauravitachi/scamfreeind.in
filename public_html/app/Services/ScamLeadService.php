@@ -43,12 +43,19 @@ class ScamLeadService extends Service
 
         $query->leftJoin($typeTable, "{$table}.{$typeForeignKey}", '=', "{$typeTable}.id");
 
-        $query->select([
+        $selects = [
             "{$table}.*",
             "{$typeTable}.title as scam_type",
-        ]);
+        ];
 
-        $query->where('is_duplicate', false);
+        if ($table === 'lawyer_leads') {
+            $query->leftJoin('lawyers', 'lawyer_leads.lawyer_id', '=', 'lawyers.id');
+            $selects[] = 'lawyers.name as lawyer_name';
+        }
+
+        $query->select($selects);
+
+        $query->where("{$table}.is_duplicate", false);
 
         /**
          * Scam Type Filter

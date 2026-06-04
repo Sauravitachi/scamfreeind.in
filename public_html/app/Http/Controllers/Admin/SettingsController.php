@@ -50,10 +50,11 @@ class SettingsController extends \App\Foundation\Controller
         }
 
         $settings = Setting::where('tag', 'login')->get(['key', 'value'])->keyBy('key');
+        $roles = Role::all(['id', 'name', 'is_admin', 'allowed_ips']);
 
         $this->activityLogService->visited('login settings');
 
-        return view('admin.settings.login', compact('settings'));
+        return view('admin.settings.login', compact('settings', 'roles'));
     }
 
     public function business(): View

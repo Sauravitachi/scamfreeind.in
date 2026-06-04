@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\ScamLeadRequest;
 use App\Models\LawyerLead;
 use App\Models\ScamSource;
 use App\Models\ProblemType;
+use App\Models\Lawyer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -41,8 +42,7 @@ class LawyerController extends Controller
                 ['title' => $problemType]
             );
             $problemTypeId = $scamType->id;
-        } else {
-            // Fallback: Parse problem type from message/description if present
+        } else {    
             $desc = $request->input('customer_description') ?? $request->input('message');
             if ($desc && preg_match('/legal issue:\s*([^\n\r\t]+)/i', $desc, $matches)) {
                 $parsedType = trim($matches[1]);
@@ -77,5 +77,12 @@ class LawyerController extends Controller
             'data' => $lawyerLead
         ], 201);
     }
+    public function lawyers(){
+        $lawyers = Lawyer::with('specializations')->where('is_active', true)->get(['id', 'name', 'email', 'phone', 'address', 'image']);
+        return response()->json([
+            'success' => true,
+            'lawyers' => $lawyers
+        ]);
+    }   
 }
 

@@ -48,6 +48,15 @@
                     </x-admin.select>
                 </div>
         
+                <div class="col-lg-4">
+                    <x-admin.select name='lawyer_id' id="lawyer_id" label='Lawyer Name'>
+                        <option value="" selected disabled>Select Lawyer Name</option>
+                        @foreach ($lawyers as $lawyer)
+                            <option value="{{ $lawyer->id }}">{{ $lawyer->name }}</option>
+                        @endforeach
+                    </x-admin.select>
+                </div>
+        
                 <div class="col-12">
                     <x-admin.textarea name='customer_description' label='Customer Description'
                         placeholder='Enter customer description (max 1000 characters)' rows='4' />
@@ -122,6 +131,7 @@
                             $form.find('select[name="country_code"]').val(scamLead.country_code);
                             $form.find('select[name="scam_source_id"]').val(scamLead.scam_source_id);
                             $form.find('select[name="problem_type_id"]').val(scamLead.problem_type_id);
+                            $form.find('select[name="lawyer_id"]').val(scamLead.lawyer_id);
                             $form.find('input[name="customer_description"]').val(scamLead.customer_description);
 
 
@@ -130,6 +140,7 @@
                             initSelect2($('#customer-country-select'), { dropdownParent: EDIT_LEAD_MODULE.$offcanvasBody });
                             initSelect2($('#scam_source_id'), { dropdownParent: EDIT_LEAD_MODULE.$offcanvasBody });
                             initSelect2($('#problem_type_id'), { dropdownParent: EDIT_LEAD_MODULE.$offcanvasBody });
+                            initSelect2($('#lawyer_id'), { dropdownParent: EDIT_LEAD_MODULE.$offcanvasBody });
 
                             $form.valid();
 

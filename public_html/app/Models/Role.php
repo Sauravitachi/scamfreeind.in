@@ -9,7 +9,7 @@ class Role extends \Spatie\Permission\Models\Role
      *
      * @var array<int, string>
      */
-    protected $fillable = ['name', 'guard_name', 'user_creatable_roles', 'is_admin'];
+    protected $fillable = ['name', 'guard_name', 'user_creatable_roles', 'is_admin','allowed_ips'];
 
     /**
      * The attributes that should be cast to native types.

@@ -23,6 +23,8 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ScamController;
 use App\Http\Controllers\Admin\ScamLeadController;
 use App\Http\Controllers\Admin\LawyerController;
+use App\Http\Controllers\Admin\LawyersController;
+use App\Http\Controllers\Admin\SpecializationsController;
 use App\Http\Controllers\Admin\ScamRegistrationAmountController;
 use App\Http\Controllers\Admin\ScamSourceController;
 use App\Http\Controllers\Admin\StateController;
@@ -162,6 +164,8 @@ $routes = function () {
             Route::get('select-search', 'selectSearch')->name('select-search');
         });
         Route::resource('states', StateController::class);
+        Route::resource('lawyers', LawyersController::class);
+        Route::resource('specializations', SpecializationsController::class);
         Route::post('upload-file', [FileUploadController::class, 'store'])->name('upload-file');
         Route::prefix('server')->name('server.')->controller(ServerController::class)->group(function () {
             Route::get('phpinfo', 'phpinfo')->name('phpinfo');

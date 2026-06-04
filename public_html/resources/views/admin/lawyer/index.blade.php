@@ -81,7 +81,8 @@
                     ['title' => 'Email'],
                     ['title' => 'Country'],
                     ['title' => 'Phone Number'],
-                    ['title' => 'Problem Type'],                    
+                    ['title' => 'Problem Type'],
+                    ['title' => 'Assigned Lawyer'],
                     ['title' => 'Lead Source'],
                     ['title' => 'Registerd At'],
                     ['title' => 'Action'],
@@ -145,7 +146,7 @@
                     }
                 },
                 order: [
-                    [9, 'desc'] // created_at
+                    [10, 'desc'] // created_at
                 ],
                 oLanguage: {
                     sLengthMenu: "_MENU_ entries per page",
@@ -248,6 +249,14 @@
                         data: 'scam_type',
                         name: 'scam_type',
                         searchable: false,
+                        render: function(data, type, row, meta) {
+                            return data ?? noContentText();
+                        }
+                    },
+                    {
+                        data: 'lawyer_name',
+                        name: 'lawyers.name',
+                        searchable: true,
                         render: function(data, type, row, meta) {
                             return data ?? noContentText();
                         }

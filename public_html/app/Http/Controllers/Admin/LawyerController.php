@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\BulkDeleteScamLeadRequest;
 use App\Http\Requests\Admin\BulkTransferScamLeadRequest;
 use App\Http\Requests\Admin\ScamLeadRequest;
 use App\Models\LawyerLead;
+use App\Models\Lawyer;
 use App\Models\ScamSource;
 use App\Models\ProblemType;
 use App\Services\ActivityLogService;
@@ -60,8 +61,9 @@ class LawyerController extends \App\Foundation\Controller
 
         $scamTypes = ProblemType::orderBy('title')->get(['id', 'title']);
         $scamSources = ScamSource::orderBy('title')->get(['id', 'title']);
+        $lawyers = Lawyer::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.lawyer.index', compact('scamTypes', 'scamSources'));
+        return view('admin.lawyer.index', compact('scamTypes', 'scamSources', 'lawyers'));
     }
 
     /**
@@ -72,8 +74,9 @@ class LawyerController extends \App\Foundation\Controller
         $this->activityLogService->visited('create lawyer lead');
 
         $scamTypes = ProblemType::all();
+        $lawyers = Lawyer::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.lawyer.create', compact('scamTypes'));
+        return view('admin.lawyer.create', compact('scamTypes', 'lawyers'));
     }
 
     /**
@@ -100,8 +103,9 @@ class LawyerController extends \App\Foundation\Controller
         $lawyer->load('scamSource');
 
         $scamTypes = ProblemType::all();
+        $lawyers = Lawyer::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.lawyer.edit', compact('lawyer', 'scamTypes'));
+        return view('admin.lawyer.edit', compact('lawyer', 'scamTypes', 'lawyers'));
     }
 
     /**
