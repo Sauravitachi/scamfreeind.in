@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\AstrologerConsultationController;
 use App\Http\Controllers\Api\LawyerController;
+use App\Http\Controllers\Api\VltradingController;
 use App\Http\Controllers\Admin\HomeController;
 
 
@@ -26,6 +27,7 @@ Route::prefix('blogs')->group(function () {
 Route::post('/whatsapp/lead', [WhatsAppLeadController::class, 'store']);
 Route::post('/scam/lead', [ScamLeadController::class, 'store']);
 Route::post('/lawyer/lead', [LawyerController::class, 'create']);
+Route::post('/vltrading/lead', [VltradingController::class, 'store']);
 Route::get('/lawyer/problem-types', [LawyerController::class, 'index']);
 Route::post('/contact', [ContactController::class, 'store']);
 Route::get('/video-section', [HomeController::class, 'getVideoSectionData']);

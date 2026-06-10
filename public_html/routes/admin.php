@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\ScamController;
 use App\Http\Controllers\Admin\ScamLeadController;
 use App\Http\Controllers\Admin\LawyerController;
 use App\Http\Controllers\Admin\LawyersController;
+use App\Http\Controllers\Admin\VltradingController;
 use App\Http\Controllers\Admin\SpecializationsController;
 use App\Http\Controllers\Admin\ScamRegistrationAmountController;
 use App\Http\Controllers\Admin\ScamSourceController;
@@ -121,6 +122,14 @@ $routes = function () {
             Route::post('bulk-transfer', 'bulkTransfer')->name('bulk-transfer');
         });
         Route::resource('lawyer', LawyerController::class);
+
+        Route::prefix('vltrading')->as('vltrading.')->controller(VltradingController::class)->group(function () {
+            Route::post('{vltrading}/transfer', 'transfer')->name('transfer');
+            Route::get('{vltrading}/similar-leads', 'similarLeads')->name('similar-leads');
+            Route::delete('bulk-delete', 'bulkDelete')->name('bulk-delete');
+            Route::post('bulk-transfer', 'bulkTransfer')->name('bulk-transfer');
+        });
+        Route::resource('vltrading', VltradingController::class);
         
         Route::prefix('escalations')->as('escalations.')->controller(EscalationController::class)->group(function () {
             Route::post('{escalation}/reject', 'reject')->name('reject');
