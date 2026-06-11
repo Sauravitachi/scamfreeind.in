@@ -152,12 +152,15 @@
                     $recordTypeOptions = [
                         '' => 'Display all records',
                         '1' => 'Hide all duplicate records',
-                        '2' => 'Show only duplicate records'
+                        '2' => 'Show only duplicate records',
                     ];
 
                     if($user->can(Permission::STATUS_UNASSIGNED_SCAM_LIST)) {
                         $recordTypeOptions['3'] = 'Show status unassigned records';
                     }
+
+                    $recordTypeOptions['4'] = 'Interested & Hold';
+                    $recordTypeOptions['5'] = 'Registered';
                     
                 @endphp
 
@@ -538,14 +541,16 @@
                             const id = row['id'];
 
                             const text = fullname ?
-                                `<span>${fullname}<br><span class="text-nowrap">(${phonenumber})</span>` :
-                                `<span>${phonenumber}</span></span>`;
+                                `<span>${fullname}<br><span class="text-nowrap">(${phonenumber})</span></span>` :
+                                `<span>${phonenumber}</span>`;
 
                             const $el = $(text).attr('role', 'button')
                                 .attr('onclick', `ScamDetailModule.open(${id})`)
                                 .addClass('text-decoration-underline');
 
-                            return $el.outerHtml();
+                            const copyIcon = phonenumber ? ` <i class="ti ti-copy text-muted cursor-pointer ms-1 __copy_phone_btn" data-phone="${phonenumber}" title="Copy phone number"></i>` : '';
+
+                            return $el.outerHtml() + copyIcon;
                         }
                     },
                     {
@@ -775,6 +780,23 @@
 
             $("#scams-table").on('click', '[data-delete-id]', deleteScam);
             $("#scams-table").on('click', '[data-escalate-scam-id]', escalateScam);
+
+            // Copy phone number button
+            $('#scams-table').on('click', '.__copy_phone_btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const text = $(this).attr('data-phone');
+                if (text) {
+                    navigator.clipboard.writeText(text).then(function() {
+                        toast.open({
+                            type: 'success',
+                            message: 'Phone number copied to clipboard!'
+                        });
+                    }).catch(function(err) {
+                        console.error('Could not copy text: ', err);
+                    });
+                }
+            });
 
             // Remark add/edit button
             $('#scams-table').on('click', 'button.__edit_remark_btn', function(e) {

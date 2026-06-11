@@ -60,7 +60,7 @@ class ScamFilter
 
         $showStatusUnassigneRecords = false;
 
-        if ($key && in_array($key, range(1, 3))) {
+        if ($key && in_array($key, range(1, 5))) {
             if ($key == 1) {
                 $query->where('is_duplicate', false);
             } elseif ($key == 2) {
@@ -72,6 +72,10 @@ class ScamFilter
                         ->orWhereHas('latestServiceStatusUnassignRecord');
                 });
                 $showStatusUnassigneRecords = true;
+            } elseif ($key == 4) {
+                $query->whereIn('sales_status_id', [55, 10]); // Interested or Hold
+            } elseif ($key == 5) {
+                $query->where('sales_status_id', 6); // Registered
             }
         }
 
