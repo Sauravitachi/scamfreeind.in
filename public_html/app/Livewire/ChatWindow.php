@@ -6,7 +6,6 @@ use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
-use App\Notifications\ChatNotification;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -23,29 +22,12 @@ class ChatWindow extends Component
     
     public $users = [];
     public $selectedUserId = null;
+    public ?User $selectedUser = null;
     public string $search = '';
 
     public function mount()
     {
         $this->loadUsers();
-        
-        $conversationId = request()->query('conversation');
-        if ($conversationId) {
-            $conv = Conversation::find($conversationId);
-            if ($conv) {
-                $currentUser = Auth::user() ?? Auth::guard('admin')->user();
-                $otherParticipant = $conv->participants()
-                    ->where(function($q) use ($currentUser) {
-                        $q->where('participant_id', '!=', $currentUser->id)
-                          ->orWhere('participant_type', '!=', get_class($currentUser));
-                    })
-                    ->first();
-                
-                if ($otherParticipant && $otherParticipant->participant_type === User::class) {
-                    $this->selectUser($otherParticipant->participant_id);
-                }
-            }
-        }
     }
 
     public function loadUsers()
@@ -107,9 +89,11 @@ class ChatWindow extends Component
                 'last_message_date' => $lastMessage ? $lastMessage->created_at->diffForHumans(null, true, true) : null,
                 'has_conversation' => $conv ? true : false,
                 'unread_count' => $unreadCount,
+                'profile_avatar' => $user->profile_avatar,
             ];
         }
 
+        // Sort by last message time descending, then those without conversations
         usort($usersList, function ($a, $b) {
             return $b['last_message_time'] <=> $a['last_message_time'];
         });
@@ -120,6 +104,7 @@ class ChatWindow extends Component
     public function selectUser($userId)
     {
         $this->selectedUserId = $userId;
+        $this->selectedUser = User::find($userId);
         $currentUser = Auth::user() ?? Auth::guard('admin')->user();
         
         if (!$currentUser) {
@@ -139,7 +124,6 @@ class ChatWindow extends Component
 
         if (!$conversation) {
             $selectedUser = User::find($userId);
-            \Log::info('Creating new conversation for user: ' . $userId);
             $conversation = Conversation::create([
                 'name' => 'Chat with ' . ($selectedUser ? $selectedUser->name : 'User'),
                 'is_group' => false,
@@ -170,7 +154,6 @@ class ChatWindow extends Component
         $currentUser = Auth::user() ?? Auth::guard('admin')->user();
         if (!$currentUser) return;
 
-        \Log::info('Marking conversation ' . $this->conversation->id . ' as read for user ' . $currentUser->id);
         $this->conversation->participants()
             ->where('participant_id', $currentUser->id)
             ->where('participant_type', get_class($currentUser))
@@ -223,6 +206,7 @@ class ChatWindow extends Component
             'type' => $type,
             'roomName' => $roomName,
             'callerName' => $user->name,
+            'callerAvatar' => $user->profile_avatar,
             'conversation_id' => $this->conversation->id,
             'action' => 'offer'
         ];
@@ -282,32 +266,7 @@ class ChatWindow extends Component
         }
 
         $this->dispatch('chat-updated', isIncoming: false);
-        $this->notifyParticipants($message);
         $this->loadUsers(); // Refresh sidebar with latest message
-    }
-
-    protected function notifyParticipants($message)
-    {
-        \Log::info('Notifying participants for message: ' . $message->id);
-        
-        $participants = $this->conversation->participants()
-            ->where(function($q) use ($message) {
-                $q->where('participant_id', '!=', $message->sender_id)
-                  ->orWhere('participant_type', '!=', $message->sender_type);
-            })
-            ->get();
-
-        \Log::info('Found participants: ' . $participants->count());
-
-        foreach ($participants as $participant) {
-            $user = $participant->participant;
-            if ($user && method_exists($user, 'notify')) {
-                \Log::info('Notifying ' . get_class($user) . ' ID: ' . $user->id);
-                $user->notify(new ChatNotification($message));
-            } else {
-                \Log::warn('Participant cannot be notified or does not exist: ' . ($user ? get_class($user) : 'null'));
-            }
-        }
     }
 
     public function sendSticker($sticker)
@@ -334,13 +293,11 @@ class ChatWindow extends Component
         }
 
         $this->dispatch('chat-updated', isIncoming: false);
-        $this->notifyParticipants($message);
         $this->loadUsers();
     }
 
     public function render()
     {
-        $this->loadUsers();
         return view('livewire.chat-window');
     }
 }

@@ -74,6 +74,7 @@ $routes = function () {
         });
         Route::prefix('account-settings')->as('account-settings.')->group(function () {
             Route::get('/', [AccountSettingsController::class, 'index'])->name('index');
+            Route::post('/', [AccountSettingsController::class, 'update'])->name('update');
         });
         Route::prefix('customers')->as('customers.')->group(function () {
             Route::get('select-search', [CustomerController::class, 'selectSearch'])->name('select-search');

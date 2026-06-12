@@ -126,7 +126,7 @@
         .avatar-cool {
             width: 56px;
             height: 56px;
-            border-radius: 1.1rem;
+            border-radius: 50%;
             background: var(--mine-gradient);
             display: flex;
             align-items: center;
@@ -510,7 +510,7 @@
     <!-- Sidebar -->
     <div class="sidebar-cool">
         <div class="sidebar-header-cool p-4">
-            <h5 class="p-4">ScamFree India Chat</h5>
+            <h5>ScamFree India Chat</h5>
             <div class="search-box-cool">
                 <span class="search-icon-cool">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -530,8 +530,10 @@
                     class="user-item-cool {{ $selectedUserId === $user['id'] ? 'active' : '' }}"
                     wire:key="user-{{ $user['id'] }}"
                 >
-                    <div class="avatar-cool">
-                        {{ substr($user['name'] ?? 'U', 0, 1) }}
+                    <div class="avatar-cool" @if(!empty($user['profile_avatar'])) style="background-image: url('{{ $user['profile_avatar'] }}'); background-size: cover; background-position: center; color: transparent;" @endif>
+                        @if(empty($user['profile_avatar']))
+                            {{ substr($user['name'] ?? 'U', 0, 1) }}
+                        @endif
                     </div>
                     <div class="user-info-cool">
                         <div class="user-name-cool">
@@ -559,8 +561,10 @@
         @if($conversation)
             <div class="header-cool">
                 <div class="active-user-info">
-                    <div class="avatar-cool" style="width: 48px; height: 48px; font-size: 1.1rem; margin-right: 1rem;">
-                        {{ substr($conversation->name ?? 'C', 0, 1) }}
+                    <div class="avatar-cool" style="width: 48px; height: 48px; font-size: 1.1rem; margin-right: 1rem; @if($selectedUser && !empty($selectedUser->profile_avatar)) background-image: url('{{ $selectedUser->profile_avatar }}'); background-size: cover; background-position: center; color: transparent; @endif">
+                        @if(!$selectedUser || empty($selectedUser->profile_avatar))
+                            {{ substr($conversation->name ?? 'C', 0, 1) }}
+                        @endif
                     </div>
                     <div>
                         <div style="font-weight: 600; font-size: 1.1rem;">{{ $conversation->name }}</div>
@@ -599,7 +603,7 @@
                             
                             @if(!isset($msg['type']) || $msg['type'] !== 'sticker')
                                 <div class="time-cool" style="margin-top: 0.5rem; text-align: {{ $isMine ? 'right' : 'left' }}; opacity: 0.6;">
-                                    {{ \Carbon\Carbon::parse($msg['created_at'])->setTimezone(config('app.timezone'))->format('h:i A') }}
+                                    {{ \Carbon\Carbon::parse($msg['created_at'])->format('h:i A') }}
                                 </div>
                             @endif
                         </div>
@@ -731,8 +735,10 @@
         <!-- Outgoing Call Overlay -->
         <template x-if="calling">
             <div class="call-overlay-cool">
-                <div class="call-avatar-pulse">
-                    {{ substr($conversation->name ?? 'C', 0, 1) }}
+                <div class="call-avatar-pulse" @if($selectedUser && !empty($selectedUser->profile_avatar)) style="background-image: url('{{ $selectedUser->profile_avatar }}'); background-size: cover; background-position: center; font-size: 0;" @endif>
+                    @if(!$selectedUser || empty($selectedUser->profile_avatar))
+                        {{ substr($conversation->name ?? 'C', 0, 1) }}
+                    @endif
                 </div>
                 <h2 x-text="'Calling ' + '{{ $conversation->name ?? 'User' }}' + '...'"></h2>
                 <p>Initiating secure Nexus link</p>
@@ -750,8 +756,10 @@
         <!-- Incoming Call Overlay -->
         <template x-if="incoming">
             <div class="call-overlay-cool">
-                <div class="call-avatar-pulse">
-                    <span x-text="callData ? callData.callerName.charAt(0) : '?'"></span>
+                <div class="call-avatar-pulse" :style="callData && callData.callerAvatar ? 'background-image: url(' + callData.callerAvatar + '); background-size: cover; background-position: center;' : ''">
+                    <template x-if="!callData || !callData.callerAvatar">
+                        <span x-text="callData ? callData.callerName.charAt(0) : '?'"></span>
+                    </template>
                 </div>
                 <h2 x-text="callData ? callData.callerName + ' is calling...' : 'Incoming Call...'"></h2>
                 <p>Secure transmission request</p>
@@ -820,38 +828,6 @@
             });
             
             scrollToBottom();
-
-            if (window.Echo) {
-                const userId = "{{ auth()->id() }}";
-                const userType = "{{ str_replace('\\', '.', get_class(auth()->user())) }}";
-                const channelName = `${userType}.${userId}`;
-                
-                console.log('Joining private channel for notifications:', channelName);
-
-                window.Echo.private(channelName)
-                    .notification((notification) => {
-                        console.log('chat Notification received:', notification);
-                        const conversationId = notification.conversation_id || (notification.data ? notification.data.conversation_id : null);
-                        console.log('Conversation ID from notification:', conversationId, 'Active ID:', @js($conversationId));
-                        
-                        if (conversationId && conversationId != @js($conversationId)) {
-                            console.log('Dispatching chat-updated for background conversation');
-                            Livewire.dispatch('chat-updated', { isIncoming: true });
-                            @this.loadUsers();
-                        } else {
-                            console.log('Notification ignored (same conversation or no ID)');
-                        }
-                    })
-                    .listen('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', (e) => {
-                        console.log('Raw BroadcastNotificationCreated event:', e);
-                    })
-                    .error((error) => {
-                        console.error('Echo subscription error:', error);
-                    });
-            } else {
-                console.warn('Echo not found on window object');
-            }
-
         });
     </script>
 </div>

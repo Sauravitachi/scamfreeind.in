@@ -104,9 +104,9 @@ class User extends Authenticatable implements UserDetailTextContract
                 $user->password = Hash::make($user->password);
             }
 
-            // if ($user->isDirty('country_code') && $user->country_code) {
-            //     $user->dial_code = CountryLoader::country($user->country_code)?->getCallingCode();
-            // }
+            if ($user->isDirty('country_code') && $user->country_code) {
+                $user->dial_code = CountryLoader::country($user->country_code)?->getCallingCode();
+            }
 
         });
     }
