@@ -38,6 +38,7 @@ class AccountSettingsController extends \App\Foundation\Controller
             'email' => $validatedData['email'],
             'country_code' => $validatedData['country_code'] ?? 'in',
             'phone_number' => $validatedData['phone_number'],
+            'quote' => $validatedData['quote'] ?? null,
         ]);
 
         $nameChanged = $user->isDirty('name');

@@ -116,6 +116,14 @@ class AppUiDataController extends Controller
         abort_if(!$dataSettings, 404);
 
         $rules = $dataSettings['validation_rules'];
+
+        if ($name === 'video_section') {
+            $request->validated_data = $request->validate($rules);
+
+            $method = "handle__$name";
+
+            return $this->$method($request, $name);
+        }
         
         // Expand wildcard rules for flat keys (e.g., expert_section_title_.*)
         $expandedRules = [];
@@ -164,11 +172,7 @@ class AppUiDataController extends Controller
         $appUiData->forceFill(['name' => $name, 'data' => json_encode($data)]);
 
         $appUiData->save();
-
         Cache::forget('api_video_section_data');
-        for ($i = 1; $i <= 10; $i++) {
-            Cache::forget("api_video_section_data_page_{$i}");
-        }
 
         return redirect()->route('admin.app-ui-data.index')->with('success', 'UI Updated!');
     }
@@ -201,8 +205,6 @@ class AppUiDataController extends Controller
 
         $appUiData->forceFill(['name' => $name, 'data' => json_encode($data)]);
         $appUiData->save();
-
-        Cache::forget('api_expert_section_data');
 
         return redirect()->route('admin.app-ui-data.index')->with('success', 'Expert UI Updated!');
     }

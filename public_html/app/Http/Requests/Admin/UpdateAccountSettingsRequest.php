@@ -24,6 +24,7 @@ class UpdateAccountSettingsRequest extends \App\Foundation\FormRequest
             'phone_number' => ['required', 'numeric', 'digits_between:10,14'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:5048'],
             'delete_avatar' => ['nullable', 'boolean'],
+            'quote' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

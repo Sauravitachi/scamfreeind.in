@@ -72,6 +72,11 @@
                                     :value="$user?->email" required />
                             </div>
 
+                            <div class="col-12">
+                                <x-admin.textarea label='Quote' name='quote' placeholder='Enter your motivational quote'
+                                    :value="$user?->quote" />
+                            </div>
+
                         </div>
 
                     </div>

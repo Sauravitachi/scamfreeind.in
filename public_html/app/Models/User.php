@@ -51,6 +51,7 @@ class User extends Authenticatable implements UserDetailTextContract
         'last_pinged_at',
         'freeze_disabled_until',
         'login_at',
+        'quote',
     ];
 
     /**

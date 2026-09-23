@@ -34,6 +34,7 @@ class UserRequest extends \App\Foundation\FormRequest
                 'string',
                 Rule::in($allowedRoleNames),
             ],
+            'quote' => ['nullable', 'string', 'max:500'],
 
         ];
 
